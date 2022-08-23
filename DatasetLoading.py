@@ -27,3 +27,4 @@ normal_audio = Parallel(n_jobs=-1)(delayed(librosa.load)(file) for file in norma
 anomalous_audio = Parallel(n_jobs=-1)(delayed(librosa.load)(file) for file in anomalous_files)
 
 # Things to vary: sample rate, mfcc-spectrogram-melspectrogram-rawwaveform, bit-width-representation. Neural network architecture
+# I think that it makes sense to vary this as a part of the NAS file when the architecture is constructed based on the genotype.
