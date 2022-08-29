@@ -1,9 +1,13 @@
 # We start with a simple and generic method to encode the search space. In the beginning we also only look for convolutional models as a proof of concept. (Let us stay in on the topic of audio processing) - I believe that edge impulse does the same
 
 import itertools
-from pickletools import optimize
 import tensorflow as tf
+import DatasetLoading
 
+NUM_OUTPUT_CLASSES = 2
+LOSS_FUNCTION = tf.keras.losses.CategoricalCrossentropy
+MODEL_LAYER_SEARCH_SPACE = ([8,16,32,64,128],[3,5],["relu", "sigmoid"]) # Number of filters, filter size and activation function
+INPUT_SEARCH_SPACE = ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325],["spectrogram", "mfe", "mfcc", "waveform"]) # Sample rate and preprocessing type - maybe also add bit width
 
 class SearchSpace:
     def __init__(self, model_layer_search_space, input_search_space) -> None:
@@ -29,18 +33,16 @@ class SearchSpace:
         
         return decoded_sequence
 
-class ModelGenerator:
-    def __init__(self, target_classes, loss_function, optimizer = tf.keras.optimizers.Adam,
-                 learning_rate = 0.001, dropout_rate = 0.5, metrics = ["accuracy"]): #TODO: Maybe add decay, momentum and accuracy
+class InputModelGenerator:
+    def __init__(self, target_classes, loss_function, optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001), dropout_rate = 0.5, metrics = ["accuracy"]):
         self.target_classes = target_classes
         self.loss_function = loss_function
         self.optimizer = optimizer
-        self.learning_rate = learning_rate
         self.dropout_rate = dropout_rate
         self.metrics = metrics
-        self.search_space = SearchSpace(model_layer_search_space=([8,16,32,64,128],[3,5],["relu", "sigmoid"]),input_search_space=([48000, 24000, 12000, 6000, 3000, 1500, 750, 325],["spectrogram", "mfe", "mfcc"],[32, 16, 8, 4, 2])) #TODO: This shouldn't be hard coded here.
+        self.search_space = SearchSpace(model_layer_search_space=MODEL_LAYER_SEARCH_SPACE,input_search_space=INPUT_SEARCH_SPACE)
     
-    def create_model(self, sequence: list[int], input_shape = tuple) -> tf.keras.Model:
+    def create_input_model(self, sequence: list[int], input_shape = tuple) -> tf.keras.Model:
         layer_configs = self.search_space.model_decode(sequence)
 
         model = tf.keras.Sequential()
@@ -59,11 +61,11 @@ class ModelGenerator:
         # Output layer
         model.add(tf.keras.layers.Dense(self.target_classes))
 
-        model.compile(optimizer=self.optimizer(learning_rate=self.learning_rate), loss=self.loss_function, metrics=self.metrics)
+        model.compile(optimizer=self.optimizer, loss=self.loss_function, metrics=self.metrics)
 
         return model
 
 
-model_generator = ModelGenerator(2, tf.keras.losses.CategoricalCrossentropy)
-model = model_generator.create_model([6,8,2], (32,32,3))
+model_generator = InputModelGenerator(NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
+model = model_generator.create_input_model([6,8,2], (32,32,3))
 print(model.summary())
