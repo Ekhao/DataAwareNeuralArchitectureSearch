@@ -2,14 +2,8 @@
 
 import itertools
 import tensorflow as tf
-import DatasetLoading
-
-NUM_OUTPUT_CLASSES = 2
-LOSS_FUNCTION = tf.keras.losses.CategoricalCrossentropy
-# Number of filters, filter size and activation function
-MODEL_LAYER_SEARCH_SPACE = ([8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"])
-INPUT_SEARCH_SPACE = ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], [
-                      "spectrogram", "mfe", "mfcc", "waveform"])  # Sample rate and preprocessing type - maybe also add bit width
+import datasetloading
+from constants import *
 
 
 class SearchSpace:
@@ -77,4 +71,3 @@ class InputModelGenerator:
 
 model_generator = InputModelGenerator(NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
 model = model_generator.create_input_model([6, 8, 2], (32, 32, 3))
-print(model.summary())

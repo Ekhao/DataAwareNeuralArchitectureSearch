@@ -1,7 +1,8 @@
 from joblib import Parallel, delayed
-import time
 import librosa
 import tensorflow as tf
+
+from constants import *
 
 
 class DatasetLoader:
@@ -48,8 +49,6 @@ class DatasetLoader:
 
 
 # Stupid_testing
-dataset_loader = DatasetLoader()
-loaded_dataset = dataset_loader.load_dataset(path_normal_files="/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
-                                             path_anomalous_files="/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/",
-                                             sample_rate=48000, preprocessing_type="waveform", num_normal_files=100, num_anomalous_files=20)
-print(loaded_dataset)
+# dataset_loader = DatasetLoader()
+# loaded_dataset = dataset_loader.load_dataset(PATH_TO_NORMAL_FILES, PATH_TO_ANOMALOUS_FILES,
+#                                             sample_rate = 48000, preprocessing_type = "waveform", num_normal_files = 100, num_anomalous_files = 20)
