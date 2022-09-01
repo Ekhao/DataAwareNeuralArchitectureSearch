@@ -2,6 +2,7 @@ from joblib import Parallel, delayed
 import librosa
 import tensorflow as tf
 import numpy as np
+import sys
 
 from constants import *
 
@@ -37,7 +38,7 @@ class DatasetLoader:
                 # While we can easily load data as a waveform it can not be processed by a standard convolutional block that expects image like dimensions.
                 raise NotImplementedError(
                     "Loading data as a waveform has not been implemented yet")
-                # return (normal_audio, anomalous_audio)
+                return (normal_audio, anomalous_audio)
             case "spectrogram":
                 normal_spectrograms = tf.map_fn(
                     self.create_spectrogram, normal_audio)
@@ -51,11 +52,14 @@ class DatasetLoader:
                     lambda x: self.create_mel_spectrogram(x, sample_rate), anomalous_audio)
                 return (normal_mel_spectrograms, anomalous_mel_spectrograms)
             case "mfcc":
+                normal_mfccs = tf.map_fn(
+                    lambda x: self.create_mfcc(x, sample_rate), normal_audio)
+                anomalous_mfccs = tf.map_fn(
+                    lambda x: self.create_mfcc(x, sample_rate), anomalous_audio)
+                return (normal_mfccs, anomalous_mfccs)
+            case _:
                 raise NotImplementedError(
-                    "Loading data as a MFCC has not been implemented yet")
-
-        # Things to vary: sample rate, mfcc-spectrogram-melspectrogram-rawwaveform, bit-width-representation. Neural network architecture
-        # I think that it makes sense to vary this as a part of the NAS file when the architecture is constructed based on the genotype.
+                    "This dataloader only supports loading audio as waveforms, spectrograms, mel-spectrograms and mfccs.")
 
     def librosa_load_without_sample_rate(self, file, sr):
         audio, _ = librosa.load(file, sr=sr)
@@ -70,6 +74,15 @@ class DatasetLoader:
     def create_mel_spectrogram(self, audio_sample, sample_rate):
         # Unlike for the spectrogram, the mel spectrogram has a directly accessible function in librosa.
         return librosa.power_to_db(librosa.feature.melspectrogram(audio_sample, sample_rate, n_fft=FRAME_SIZE, hop_length=HOP_SIZE, n_mels=NUMBER_OF_MEL_FILTER_BANKS))
+
+    def create_mfcc(self, audio_sample, sample_rate):
+        # Maybe also do first and second derivatives - is supposedly improving accuracy
+        # Is often not used that much in deep learning, and is made to understand speech and music - not machine sounds.
+        mfcc = librosa.feature.mfcc(
+            audio_sample, sr=sample_rate, n_mfcc=NUMBER_OF_MFCCS)
+        delta_mfcc = librosa.feature.delta(mfcc)
+        delta2_mfcc = librosa.feature.delta(mfcc, order=2)
+        return np.concatenate((mfcc, delta_mfcc, delta2_mfcc))
 
 
 # Stupid_testing
