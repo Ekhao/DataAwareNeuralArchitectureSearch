@@ -1,6 +1,6 @@
 # Modules to test
 import inputnas
-import datasetloading
+import datasetloader
 
 
 # Modules required to do testing
@@ -20,13 +20,13 @@ def test_search_space_gen():
 def test_input_model_gen():
     model_generator = inputnas.InputModelGenerator(
         NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
-    model = model_generator.create_input_model([6, 8, 2], (32, 32, 3))
+    model = model_generator.create_input_model(3, [10, 5, 3])
     assert isinstance(model, tf.keras.Model)
 
 
 def test_waveform_dataset_loading():
-    dataset_loader = datasetloading.DatasetLoader()
+    dataset_loader = datasetloader.DatasetLoader()
     dataset = dataset_loader.load_dataset(PATH_TO_NORMAL_FILES,
                                           PATH_TO_ANOMALOUS_FILES, 48000, "waveform", 10, 2)
-    assert math.isclose(dataset[0][0][0][0], -6.1035156e-05, rel_tol=1e-7) and math.isclose(
-        dataset[0][0][0][1], -9.1552734e-05, rel_tol=1e-7) and math.isclose(dataset[0][0][0][2], -1.2207031e-04, rel_tol=1e-7)
+    assert math.isclose(dataset[0][0][0], -6.1035156e-05, rel_tol=1e-7) and math.isclose(
+        dataset[0][0][1], -9.1552734e-05, rel_tol=1e-7) and math.isclose(dataset[0][0][2], -1.2207031e-04, rel_tol=1e-7)

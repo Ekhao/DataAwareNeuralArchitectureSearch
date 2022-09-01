@@ -2,7 +2,7 @@
 
 import itertools
 import tensorflow as tf
-import datasetloading
+import datasetloader
 from constants import *
 
 
@@ -21,8 +21,8 @@ class SearchSpace:
 
         return dict(zip(keys, values))
 
-    def input_decode(self, number: int) -> tuple:
-        return self.input_search_space[number]
+    def input_decode(self, input_number: int) -> tuple:
+        return self.input_search_space[input_number]
 
     def model_decode(self, sequence: list[int]) -> list[tuple]:
         decoded_sequence = []
@@ -42,7 +42,24 @@ class InputModelGenerator:
         self.search_space = SearchSpace(
             model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, input_search_space=INPUT_SEARCH_SPACE)
 
-    def create_input_model(self, sequence: list[int], input_shape=tuple) -> tf.keras.Model:
+    def create_input_model(self, input_number: int, model_layer_numbers: list[int]) -> tf.keras.Model:
+        dataset = self.create_input(input_number)
+        # We need to subscript the dataset two times.
+        # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
+        # Second subscript is to choose the first entry (all entries should have the same shape)
+        model = self.create_model(model_layer_numbers, dataset[0][0].shape)
+        return (dataset, model)
+
+    def create_input(self, input_number: int) -> tuple:
+        input_config = self.search_space.input_decode(input_number)
+
+        dataset_loader = datasetloader.DatasetLoader()
+        dataset = dataset_loader.load_dataset(
+            PATH_TO_NORMAL_FILES, PATH_TO_ANOMALOUS_FILES, input_config[0], input_config[1], NUMBER_OF_NORMAL_FILES_TO_USE, NUMBER_OF_ABNORMAL_FILES_TO_USE)
+
+        return dataset
+
+    def create_model(self, sequence: list[int], input_shape=tuple) -> tf.keras.Model:
         layer_configs = self.search_space.model_decode(sequence)
 
         model = tf.keras.Sequential()
@@ -69,5 +86,7 @@ class InputModelGenerator:
         return model
 
 
-model_generator = InputModelGenerator(NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
-model = model_generator.create_input_model([6, 8, 2], (32, 32, 3))
+input_model_generator = InputModelGenerator(NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
+# At the moment only loading of waveforms is supported
+dataset = input_model_generator.create_input(3)
+print(dataset[0][0][0].shape)
