@@ -86,7 +86,12 @@ class InputModelGenerator:
         return model
 
 
-input_model_generator = InputModelGenerator(NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
-# At the moment only loading of waveforms is supported
-dataset = input_model_generator.create_input(3)
-print(dataset[0][0][0].shape)
+def main():
+    input_model_generator = InputModelGenerator(
+        NUM_OUTPUT_CLASSES, LOSS_FUNCTION)
+    dataset, model = input_model_generator.create_input_model(3, [4, 2])
+    model.summary()
+
+
+if __name__ == "__main__":
+    main()
