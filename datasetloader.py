@@ -1,5 +1,6 @@
 from joblib import Parallel, delayed
 import librosa
+from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
 
@@ -10,6 +11,20 @@ class DatasetLoader:
     def __init__(self) -> None:
         pass
     # There are 1800 normal files and 400 anomalous files (in channel 1)
+
+    def supervised_dataset(self, normal_preprocessed, anomalous_preprocessed, test_size=0.2):
+        normal_y = tf.one_hot(
+            tf.zeros(len(normal_preprocessed)).numpy(), depth=2)
+        abnormal_y = tf.one_hot(
+            tf.ones(len(anomalous_preprocessed)).numpy(), depth=2)
+
+        X = tf.concat([normal_preprocessed, anomalous_preprocessed], 0)
+        y = tf.concat([normal_y, abnormal_y], 0)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.numpy(), y.numpy(), test_size=test_size, stratify=y)
+
+        return X_train, X_test, y_train, y_test
 
     def load_dataset(self, path_normal_files, path_anomalous_files, sample_rate, preprocessing_type,
                      num_normal_files=1800, num_anomalous_files=400, channel=1) -> tuple:
