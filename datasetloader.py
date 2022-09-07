@@ -13,10 +13,8 @@ class DatasetLoader:
     # There are 1800 normal files and 400 anomalous files (in channel 1)
 
     def supervised_dataset(self, normal_preprocessed, anomalous_preprocessed, test_size=0.2):
-        normal_y = tf.one_hot(
-            tf.zeros(len(normal_preprocessed)).numpy(), depth=2)
-        abnormal_y = tf.one_hot(
-            tf.ones(len(anomalous_preprocessed)).numpy(), depth=2)
+        normal_y = tf.zeros(len(normal_preprocessed))
+        abnormal_y = tf.ones(len(anomalous_preprocessed))
 
         X = tf.concat([normal_preprocessed, anomalous_preprocessed], 0)
         y = tf.concat([normal_y, abnormal_y], 0)

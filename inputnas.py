@@ -128,13 +128,8 @@ class InputModelGenerator:
 
         y_hat = model.predict(X_test, batch_size=self.batch_size)
 
-        # Turn the prediction probabilities into a top 1 encoding of the same shape as y_true
-        y_hat = tf.squeeze(tf.one_hot(tf.math.top_k(
-            y_hat, k=1).indices.numpy(), depth=2)).numpy()
-
-        # Testing
-        y_hat = tf.math.argmax(y_hat, axis=1).numpy()
-        y_test = tf.math.argmax(y_test, axis=1).numpy()
+        # Transform the output one hot incoding into class indices
+        y_hat = tf.math.top_k(input=y_hat, k=1).indices.numpy()[:, 0]
 
         print(y_hat)
         print(y_test)
