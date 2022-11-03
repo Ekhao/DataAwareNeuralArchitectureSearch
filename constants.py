@@ -15,7 +15,7 @@ LOSS_FUNCTION = tf.keras.losses.SparseCategoricalCrossentropy()
 PATH_TO_NORMAL_FILES = "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/"
 PATH_TO_ANOMALOUS_FILES = "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/"
 NUMBER_OF_NORMAL_FILES_TO_USE = 900
-NUMBER_OF_ABNORMAL_FILES_TO_USE = 200
+NUMBER_OF_ANOMALOUS_FILES_TO_USE = 200
 
 # Audio preprocessing parameters
 FRAME_SIZE = 2048  # Traditional values
