@@ -159,7 +159,7 @@ class InputModelGenerator:
         model.add(tf.keras.layers.Flatten())
 
         model.add(tf.keras.layers.Dense(
-            10, activation=tf.keras.activations.relu))
+            WIDTH_OF_DENSE_LAYER, activation=tf.keras.activations.relu))
 
         # Output layer
         model.add(tf.keras.layers.Dense(

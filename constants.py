@@ -10,6 +10,7 @@ INPUT_SEARCH_SPACE = ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], [
 # Model Parameters
 NUM_OUTPUT_CLASSES = 2
 LOSS_FUNCTION = tf.keras.losses.SparseCategoricalCrossentropy()
+WIDTH_OF_DENSE_LAYER = 10
 
 # Dataset parameters
 PATH_TO_NORMAL_FILES = "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/"
@@ -29,3 +30,6 @@ MAX_NUM_LAYERS = 5
 # Evaluation parameters
 NUM_EPOCHS = 10
 BATCH_SIZE = 32
+
+# Evolutionary parameters
+POPULATION_SIZE = 10
