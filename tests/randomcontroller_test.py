@@ -1,5 +1,3 @@
-from random import random
-from constants import INPUT_SEARCH_SPACE
 import randomcontroller
 
 

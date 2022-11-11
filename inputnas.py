@@ -58,9 +58,6 @@ class InputModel:
         # Transform the output one hot incoding into class indices
         y_hat = tf.math.top_k(input=y_hat, k=1).indices.numpy()[:, 0]
 
-        print(y_hat)
-        print(y_test)
-
         # We would like to get accuracy, precision, recall and model size.
         self.accuracy = sklearn.metrics.accuracy_score(
             y_true=y_test, y_pred=y_hat)

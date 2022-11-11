@@ -2,51 +2,157 @@
 import controller
 from constants import *
 import random
+import queue
+import numpy as np
 
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, seed=None, trivial=True, population_size=POPULATION_SIZE) -> None:
+    def __init__(self, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_size=TOURNAMENT_SIZE) -> None:
+        random.seed(seed)
+        self.currently_evaluating = None
+        self.unevaluated_population = queue.SimpleQueue()
+        self.population = []
+        self.population_size = population_size
+        self.input_search_space = input_search_space
+        self.model_layer_search_space = model_layer_search_space
+        self.max_num_layers = max_num_layers
+        self.crossover_ratio = crossover_ratio
+        self.tournament_size = tournament_size
 
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
-        random.seed(seed)
-        population = []
-        if trivial:
-            for i in range(POPULATION_SIZE):
-                population.append((random.randint(
-                    0, super().get_number_of_search_space_combinations(INPUT_SEARCH_SPACE) - 1), [random.randint(0, super().get_number_of_search_space_combinations(MODEL_LAYER_SEARCH_SPACE) - 1)]))
+        if trivial_initialization:
+            for i in range(population_size):
+                self.unevaluated_population.put((random.randint(
+                    0, super().get_number_of_search_space_combinations(input_search_space) - 1), [random.randint(0, super().get_number_of_search_space_combinations(model_layer_search_space) - 1)]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
-            for i in range(POPULATION_SIZE):
-                number_of_layers = random.randint(1, MAX_NUM_LAYERS)
+            for i in range(population_size):
+                number_of_layers = random.randint(1, max_num_layers)
                 model_layer_configuration = []
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randint(
-                        0, super().get_number_of_search_space_combinations(MODEL_LAYER_SEARCH_SPACE) - 1))
-
-        # We create a tuple of each entry in the population and the False boolean. This is used in the generate_configuration method to signal that this entry has not been evauluated yet.
-        population = zip(population, [False] * len(population))
+                        0, super().get_number_of_search_space_combinations(model_layer_search_space) - 1))
+                self.unevaluated_population.put((random.randint(
+                    0, super().get_number_of_search_space_combinations(input_search_space) - 1), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
-        # Generate a candidate off the new population (either mutation og crossing of parents in the old population)
+        return self.unevaluated_population.get(block=False)
 
-        # Serve an unevaluated candidate from the current population
-        raise NotImplementedError()
-
-    def update_parameters(self, loss):
-        # Add the candidate to the population based on its performance
-        # Maybe use tournament selection to decide which population to breed
+    # Updates the input_model with its measured performance.
+    # Generates a new population if all of the current population has been evaluated.
+    def update_parameters(self, input_model):
+        # Add performance of the currently evaluating input model to the population
+        fitness = self.__evaluate_fitness(input_model)
+        self.population.append((input_model, fitness))
 
         # When an entire population has been evaluated we generate a new population
+        if self.unevaluated_population.empty():
+            self.__generate_new_population()
+
+    def __evaluate_fitness(self, input_model):
+        return input_model.accuracy + input_model.precision + input_model.recall
+
+    def __generate_new_population(self):
+        # Use tournament selection to decide which population to breed
+        breeders = self.__tournament_selection()
+
+        amount_of_new_individuals = self.population_size - len(breeders)
+        amount_of_mutations = amount_of_new_individuals / \
+            (1 - self.crossover_ratio)
+        amount_of_crossovers = amount_of_new_individuals / self.crossover_ratio
+
+        new_mutations = self.__create_mutations(
+            individuals=breeders, amount=amount_of_mutations)
+        new_crossovers = self.__create_crossovers(
+            breeders=breeders, amount=amount_of_crossovers)
+
+        # self.population.clear()
+        self.population = breeders + new_mutations + new_crossovers
+
+    def __tournament_selection(self):
+        tournaments = np.array_split(self.population, self.tournament_size)
+
+        winners = map(lambda x: x[1].max(), tournaments)
+
+        return winners
+
+    def __create_mutations(self, individuals, amount):
+        # Generate a random number to choose which mutation to use:
+        mutations = []
+        for i in range(amount):
+            random_mutation_number = random.random()
+            random_individual = individuals[random.randrange(len(individuals))]
+
+            match random_mutation_number:
+                case x if 0 <= x < 0.1:
+                    mutation = self.__new_convolutional_layer_mutation(
+                        random_individual)
+                case x if 0.1 <= x < 0.2:
+                    mutation = self.__remove_convolutional_layer_mutation(
+                        random_individual)
+                case x if 0.2 <= x < 0.3:
+                    mutation = self.__increase_filter_size_mutation(
+                        random_individual)
+                case x if 0.3 <= x < 0.4:
+                    mutation = self.__decrease_filter_size_mutation(
+                        random_individual)
+                case x if 0.4 <= x < 0.5:
+                    mutation = self.__increase_number_of_filters_mutation(
+                        random_individual)
+                case x if 0.5 <= x < 0.6:
+                    mutation = self.__decrease_number_of_filters_mutation(
+                        random_individual)
+                case x if 0.6 <= x < 0.7:
+                    mutation = self.__change_activation_function_mutation(
+                        random_individual)
+                case x if 0.7 <= x < 0.8:
+                    mutation = self.__increase_sample_rate_mutation(
+                        random_individual)
+                case x if 0.8 <= x < 0.9:
+                    mutation = self.__decrease_sample_rate_mutation(
+                        random_individual)
+                case x if 0.9 <= x < 1:
+                    mutation = self.__change_preprocessing_mutation()
+            mutations.append(mutation)
+
+        return mutations
+
+    def __create_crossovers(self, breeders, amount):
         raise NotImplementedError()
 
+    def __new_convolutional_layer_mutation(self, configuration):
+        raise NotImplementedError
 
-# It seems that ENAS often generates an initial group of solutions - evaluate all of them.
-# Then generate a new group of solutions and evaluate all of them.
-# This is a little different than the framework set up here.
+    def __remove_convolutional_layer_mutation(self, configuration):
+        raise NotImplementedError
 
-# Maybe split evaluation functions into cheap and expensive to calculate functions and evaluate the cheap functions more often. Like in LEMONADE.
+    def __increase_filter_size_mutation(self, configuration):
+        raise NotImplementedError
 
-# Methods to improve evaluation speed: Have offspring inherit the weights of their parents, Early stopping of training e.g. after a few epochs, reduce the size of the training set, reducing the size of the ENAS population (Not sure that this is such a good idea), not reevaluating the same individuals several times.
+    def __decrease_filter_size_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __increase_number_of_filters_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __decrease_number_of_filters_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __change_activation_function_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __increase_sample_rate_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __decrease_sample_rate_mutation(self, configuration):
+        raise NotImplementedError
+
+    def __change_preprocessing_mutation(self, configuration):
+        raise NotImplementedError
+
+        # Maybe split evaluation functions into cheap and expensive to calculate functions and evaluate the cheap functions more often. Like in LEMONADE.
+
+        # Methods to improve evaluation speed: Have offspring inherit the weights of their parents, Early stopping of training e.g. after a few epochs, reduce the size of the training set, reducing the size of the ENAS population (Not sure that this is such a good idea), not reevaluating the same individuals several times.

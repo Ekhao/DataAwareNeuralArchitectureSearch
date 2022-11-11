@@ -8,7 +8,7 @@ class Controller(ABC):
         pass
 
     @abstractmethod
-    def update_parameters(self, loss):
+    def update_parameters(self, input_model):
         pass
 
     def get_number_of_search_space_combinations(self, search_space):

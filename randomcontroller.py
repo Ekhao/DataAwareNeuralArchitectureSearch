@@ -20,6 +20,6 @@ class RandomController (controller.Controller):
 
         return (input_configuation, model_layer_configuration)
 
-    def update_parameters(self, loss):
+    def update_parameters(self, input_model):
         # The random controller does not have any parameters that should be updated
         pass
