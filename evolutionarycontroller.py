@@ -8,7 +8,8 @@ import numpy as np
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_size=TOURNAMENT_SIZE) -> None:
+    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_size=TOURNAMENT_SIZE) -> None:
+        super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
         self.unevaluated_population = queue.SimpleQueue()
@@ -24,18 +25,18 @@ class EvolutionaryController(controller.Controller):
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
         if trivial_initialization:
             for i in range(population_size):
-                self.unevaluated_population.put((random.randint(
-                    0, super().get_number_of_search_space_combinations(input_search_space) - 1), [random.randint(0, super().get_number_of_search_space_combinations(model_layer_search_space) - 1)]))
+                self.unevaluated_population.put((random.randrange(
+                    0, super().get_number_of_search_space_combinations(input_search_space)), [random.randrange(0, super().get_number_of_search_space_combinations(model_layer_search_space))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
             for i in range(population_size):
                 number_of_layers = random.randint(1, max_num_layers)
                 model_layer_configuration = []
                 for layer in range(number_of_layers):
-                    model_layer_configuration.append(random.randint(
-                        0, super().get_number_of_search_space_combinations(model_layer_search_space) - 1))
-                self.unevaluated_population.put((random.randint(
-                    0, super().get_number_of_search_space_combinations(input_search_space) - 1), model_layer_configuration))
+                    model_layer_configuration.append(random.randrange(
+                        0, super().get_number_of_search_space_combinations(model_layer_search_space)))
+                self.unevaluated_population.put((random.randrange(
+                    0, super().get_number_of_search_space_combinations(input_search_space)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
@@ -123,13 +124,32 @@ class EvolutionaryController(controller.Controller):
     def __create_crossovers(self, breeders, amount):
         raise NotImplementedError()
 
+    # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
     def __new_convolutional_layer_mutation(self, configuration):
-        raise NotImplementedError
+        new_conv_layer = random.randrange(
+            0, super().get_number_of_search_space_combinations(self.model_layer_search_space))
+        assert type(configuration[1]) == list
+        return configuration[1].append(new_conv_layer)
 
+    # Remove the last convolutional layer of the model
     def __remove_convolutional_layer_mutation(self, configuration):
-        raise NotImplementedError
+        assert type(configuration[1]) == list
+        configuration[1].pop()
+        return configuration[1]
 
+    # Increase the filter size of a random convolutional layer
     def __increase_filter_size_mutation(self, configuration):
+        assert type(configuration[1] == list)
+        random_conv_layer_number = self.__random_conv_layer_number(
+            configuration)
+        layer_to_modify = configuration[1][random_conv_layer_number]
+
+        # Decode layer
+
+        # Change filter size
+
+        # Encode layer again
+
         raise NotImplementedError
 
     def __decrease_filter_size_mutation(self, configuration):
@@ -153,6 +173,9 @@ class EvolutionaryController(controller.Controller):
     def __change_preprocessing_mutation(self, configuration):
         raise NotImplementedError
 
-        # Maybe split evaluation functions into cheap and expensive to calculate functions and evaluate the cheap functions more often. Like in LEMONADE.
+    def __random_conv_layer_number(self, configuration):
+        return random.randrange(0, len(configuration[1]))
 
-        # Methods to improve evaluation speed: Have offspring inherit the weights of their parents, Early stopping of training e.g. after a few epochs, reduce the size of the training set, reducing the size of the ENAS population (Not sure that this is such a good idea), not reevaluating the same individuals several times.
+    # Maybe split evaluation functions into cheap and expensive to calculate functions and evaluate the cheap functions more often. Like in LEMONADE.
+
+    # Methods to improve evaluation speed: Have offspring inherit the weights of their parents, Early stopping of training e.g. after a few epochs, reduce the size of the training set, reducing the size of the ENAS population (Not sure that this is such a good idea), not reevaluating the same individuals several times.
