@@ -145,12 +145,21 @@ class EvolutionaryController(controller.Controller):
         layer_to_modify = configuration[1][random_conv_layer_number]
 
         # Decode layer
+        decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
 
-        # Change filter size
+        # Change filter size. Filter size in the current search space is in the second position of the search space tuple.
+        current_filter_size = decoded_layer[1]
+        new_filter_size = next(
+            (x for x in self.search_space.model_layer_search_space[1] if x > current_filter_size), max(self.search_space.model_layer_search_space[1]))
 
         # Encode layer again
+        decoded_layer[1] = new_filter_size
+        new_layer = self.search_space.model_layer_encode(decoded_layer)
 
-        raise NotImplementedError
+        # Add the layer to the configuration again
+        configuration[1][random_conv_layer_number] = new_layer
+
+        return configuration
 
     def __decrease_filter_size_mutation(self, configuration):
         raise NotImplementedError

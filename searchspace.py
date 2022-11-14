@@ -19,9 +19,23 @@ class SearchSpace:
     def input_decode(self, input_number: int) -> tuple:
         return self.input_search_space[input_number]
 
-    def model_decode(self, sequence: list[int]) -> list[tuple]:
-        decoded_sequence = []
-        for key in sequence:
-            decoded_sequence.append(self.model_layer_search_space[key])
+    def input_encode(self, input_configuration: tuple) -> int:
+        return list(self.input_search_space.keys())[list(self.input_search_space.values()).index(input_configuration)]
 
+    def model_layer_decode(self, model_layer_number: int) -> tuple:
+        return self.model_layer_search_space[model_layer_number]
+
+    def model_layer_encode(self, model_layer_configuration: tuple) -> int:
+        return list(self.model_layer_search_space.keys())[list(self.model_layer_search_space.values()).index(model_layer_configuration)]
+
+    def model_decode(self, model_layer_number_sequence: list[int]) -> list[tuple]:
+        decoded_sequence = []
+        for number in model_layer_number_sequence:
+            decoded_sequence.append(self.model_layer_decode(number))
         return decoded_sequence
+
+    def model_encode(self, model_layer_configuration_sequence: list[int]) -> list[tuple]:
+        encoded_sequence = []
+        for configuration in model_layer_configuration_sequence:
+            encoded_sequence.append(self.model_layer_encode(configuration))
+        return encoded_sequence
