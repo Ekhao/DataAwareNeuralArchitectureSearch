@@ -1,21 +1,65 @@
+import datasetloader
+import searchspace
+
 import tensorflow as tf
 import sklearn.metrics
 import numpy as np
 
 
 class InputModel:
-    def __init__(self, input, model) -> None:
-        self.model = model
-        self.input = input
+    def __init__(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> None:
+        self.input = self.create_input(
+            input_configuration=input_configuration, search_space=search_space, dataset_loader=dataset_loader)
+        # We need to subscript the dataset two times.
+        # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
+        # Second subscript is to choose the first entry (all entries should have the same shape)
+        self.model = self.create_model(
+            model_configuration=model_configuration, search_space=search_space, input_shape=self.input[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
 
-    def evaluate_input_model(self, generator):
+    def create_input(self, input_configuration: int, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader) -> tuple:
+        input_config = search_space.input_decode(input_configuration)
+
+        normal_preprocessed, abnormal_preprocessed = dataset_loader.load_dataset(
+            input_config[0], input_config[1])
+
+        return dataset_loader.supervised_dataset(normal_preprocessed, abnormal_preprocessed)
+
+    def create_model(self, model_configuration: list[int], search_space, input_shape: tuple, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> tf.keras.Model:
+        layer_configs = search_space.model_decode(model_configuration)
+
+        model = tf.keras.Sequential()
+
+        # For the first layer we need to define the input shape
+        model.add(tf.keras.layers.Conv2D(
+            filters=layer_configs[0][0], kernel_size=layer_configs[0][1], activation=layer_configs[0][2], input_shape=input_shape))
+
+        for layer_config in layer_configs[1:]:
+            model.add(tf.keras.layers.Conv2D(
+                filters=layer_config[0], kernel_size=layer_config[1], activation=layer_config[2]))
+
+        # The standard convolutional model has dense layers at its end for classification - let us make the same assumption TODO: should be a part of search space
+        model.add(tf.keras.layers.Flatten())
+
+        model.add(tf.keras.layers.Dense(
+            model_width_dense_layer, activation=tf.keras.activations.relu))
+
+        # Output layer
+        model.add(tf.keras.layers.Dense(
+            num_target_classes, activation=tf.keras.activations.softmax))
+
+        model.compile(optimizer=model_optimizer,
+                      loss=model_loss_function, metrics=model_metrics)
+
+        return model
+
+    def evaluate_input_model(self, num_epochs, batch_size):
         # Maybe introduce validation data to stop training if the validation error starts increasing.
-        X_train, X_test, y_train, y_test = self.dataset
+        X_train, X_test, y_train, y_test = self.input
 
-        self.model.fit(x=X_train, y=y_train, epochs=generator.num_epochs,
-                       batch_size=generator.batch_size)
+        self.model.fit(x=X_train, y=y_train, epochs=num_epochs,
+                       batch_size=batch_size)
 
-        y_hat = self.model.predict(X_test, batch_size=generator.batch_size)
+        y_hat = self.model.predict(X_test, batch_size=batch_size)
 
         # Transform the output one hot incoding into class indices
         y_hat = tf.math.top_k(input=y_hat, k=1).indices.numpy()[:, 0]

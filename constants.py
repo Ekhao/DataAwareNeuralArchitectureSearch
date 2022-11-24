@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 # Search space parameters
-# Number of filters, filter size and activation function
+# Amount of filters, filter size and activation function
 MODEL_LAYER_SEARCH_SPACE = ([2, 4, 8, 16, 32, 64, 128], [
                             3, 5], ["relu", "sigmoid"])
 INPUT_SEARCH_SPACE = ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], [
@@ -17,6 +17,7 @@ PATH_TO_NORMAL_FILES = "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/Nor
 PATH_TO_ANOMALOUS_FILES = "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/"
 NUMBER_OF_NORMAL_FILES_TO_USE = 900
 NUMBER_OF_ANOMALOUS_FILES_TO_USE = 200
+DATASET_CHANNEL_TO_USE = 1
 
 # Audio preprocessing parameters
 FRAME_SIZE = 2048  # Traditional values
@@ -28,6 +29,7 @@ NUMBER_OF_MFCCS = 13  # Traditional values
 MAX_NUM_LAYERS = 5
 
 # Evaluation parameters
+OPTIMIZER = tf.keras.optimizers.Adam()
 NUM_EPOCHS = 10
 BATCH_SIZE = 32
 

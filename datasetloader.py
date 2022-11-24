@@ -1,16 +1,36 @@
+from constants import *
+
 from joblib import Parallel, delayed
 import librosa
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
-
-from constants import *
+import copy
 
 
 class DatasetLoader:
-    def __init__(self) -> None:
-        pass
+
+    # We do the initial part of the dataset loading in the constructor to avoid loading from files continiously
     # There are 1800 normal files and 400 anomalous files (in channel 1)
+    def __init__(self, path_normal_files, path_anomalous_files, num_normal_files, num_anomalous_files, channel) -> None:
+        # Find all files in the requested channel directory
+        normal_files = tf.io.gfile.glob(
+            f"{path_normal_files}*ch{channel}*.wav")
+        anomalous_files = tf.io.gfile.glob(
+            f"{path_anomalous_files}*ch{channel}*.wav")
+
+        # Cut the amount of processed files according to the program parameters
+        normal_files = normal_files[:num_normal_files]
+        anomalous_files = anomalous_files[:num_anomalous_files]
+
+        # Get the sample rate of the audio files. The sample rate is assumed to be the same for every file.
+        self.base_sr = librosa.get_samplerate(normal_files[0])
+
+        # Load the audio files using librosa. Use multiple python processes in order to speed up loading.
+        self.base_normal_audio = Parallel(
+            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in normal_files)
+        self.base_anomalous_audio = Parallel(
+            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in anomalous_files)
 
     def supervised_dataset(self, normal_preprocessed, anomalous_preprocessed, test_size=0.2):
         normal_y = tf.zeros(len(normal_preprocessed))
@@ -24,26 +44,16 @@ class DatasetLoader:
 
         return X_train, X_test, y_train, y_test
 
-    def load_dataset(self, path_normal_files, path_anomalous_files, sample_rate, preprocessing_type,
-                     num_normal_files=1800, num_anomalous_files=400, channel=1) -> tuple:
-        # Find every channel one file in the listed directories
-        normal_files = tf.io.gfile.glob(
-            f"{path_normal_files}*ch{channel}*.wav")
-        anomalous_files = tf.io.gfile.glob(
-            f"{path_anomalous_files}*ch{channel}*.wav")
+    # This method is called to load the dataset according to a specific input configuration.
+    # The base dataset (full granularity) should already have been loaded in the constructor of this class.
+    def load_dataset(self, target_sr, preprocessing_type) -> tuple:
+        normal_audio = copy.deepcopy(self.base_normal_audio)
+        anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
 
-        # Cut the amount of processed files according to the program parameters
-        normal_files = normal_files[:num_normal_files]
-        anomalous_files = anomalous_files[:num_anomalous_files]
-
-        # Get the sample rate of the audio files. The sample rate is assumed to be the same for every file.
-        sample_rate = librosa.get_samplerate(normal_files[0])
-
-        # Load the audio files using librosa. Use multiple python processes in order to speed up loading.
         normal_audio = Parallel(
-            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=sample_rate) for file in normal_files)
-        anomalous_audio = Parallel(
-            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=sample_rate) for file in anomalous_files)
+            n_jobs=-1)(delayed(librosa.resample)(audio, self.base_sr, target_sr) for audio in normal_audio)
+        anomalous_audio = Parallel(n_jobs=-1)(delayed(librosa.resample)
+                                              (audio, self.base_sr, target_sr) for audio in anomalous_audio)
 
         match preprocessing_type:
             case "waveform":
@@ -59,19 +69,19 @@ class DatasetLoader:
                 return (normal_spectogram, anomalous_spectrograms)
             case "mel-spectrogram":
                 normal_mel_spectogram = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, sample_rate) for audio in normal_audio)
+                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr) for audio in normal_audio)
                 anomalous_mel_spectrograms = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, sample_rate) for audio in anomalous_audio)
+                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr) for audio in anomalous_audio)
                 return (normal_mel_spectogram, anomalous_mel_spectrograms)
             case "mfcc":
                 normal_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, sample_rate) for audio in normal_audio)
+                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr) for audio in normal_audio)
                 anomalous_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, sample_rate) for audio in anomalous_audio)
+                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr) for audio in anomalous_audio)
                 return (normal_mfccs, anomalous_mfccs)
             case _:
                 raise NotImplementedError(
-                    "This dataloader only supports loading audio as waveforms, spectrograms, mel-spectrograms and mfccs.")
+                    "This dataloader only supports loading audio as spectrograms, mel-spectrograms and mfccs.")
 
     def librosa_load_without_sample_rate(self, file, sr):
         audio, _ = librosa.load(file, sr=sr)
