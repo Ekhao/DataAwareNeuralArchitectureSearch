@@ -10,7 +10,7 @@ def test_spectrogram_loading():
     dataset_loader = datasetloader.DatasetLoader(path_normal_files=constants.PATH_TO_NORMAL_FILES,
                                                  path_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, num_normal_files=1, num_anomalous_files=0, channel=1)
     spectrograms = dataset_loader.load_dataset(
-        target_sr=48000, preprocessing_type="spectrogram")
+        target_sr=48000, preprocessing_type="spectrogram", frame_size=2048, hop_length=512)
     assert spectrograms[0][0].shape == (1025, 938, 1)
 
 
@@ -18,7 +18,7 @@ def test_mel_spectrogram_loading():
     dataset_loader = datasetloader.DatasetLoader(path_normal_files=constants.PATH_TO_NORMAL_FILES,
                                                  path_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, num_normal_files=1, num_anomalous_files=0, channel=1)
     spectrograms = dataset_loader.load_dataset(
-        target_sr=48000, preprocessing_type="mel-spectrogram")
+        target_sr=48000, preprocessing_type="mel-spectrogram", frame_size=2048, hop_length=512, num_mel_banks=80)
     assert spectrograms[0][0].shape == (80, 938, 1)
 
 
@@ -26,7 +26,7 @@ def test_mfcc_loading():
     dataset_loader = datasetloader.DatasetLoader(path_normal_files=constants.PATH_TO_NORMAL_FILES,
                                                  path_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, num_normal_files=1, num_anomalous_files=0, channel=1)
     spectrograms = dataset_loader.load_dataset(
-        target_sr=48000, preprocessing_type="mfcc")
+        target_sr=48000, preprocessing_type="mfcc", frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13)
     assert spectrograms[0][0].shape == (39, 938, 1)
 
 
@@ -34,7 +34,7 @@ def test_supervised_dataset_generator():
     dataset_loader = datasetloader.DatasetLoader(path_normal_files=constants.PATH_TO_NORMAL_FILES,
                                                  path_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, num_normal_files=2, num_anomalous_files=2, channel=1)
     normal_preprocessed, anomalous_preprocessed = dataset_loader.load_dataset(
-        target_sr=48000, preprocessing_type="mel-spectrogram")
+        target_sr=48000, preprocessing_type="mel-spectrogram", frame_size=2048, hop_length=512, num_mel_banks=80)
 
     X_train, X_test, y_train, y_test = dataset_loader.supervised_dataset(
         normal_preprocessed, anomalous_preprocessed, test_size=0.5)

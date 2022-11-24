@@ -8,7 +8,7 @@ import constants
 
 
 class InputModelGenerator:
-    def __init__(self, num_target_classes, loss_function, controller=randomcontroller.RandomController(searchspace.SearchSpace(model_layer_search_space=constants.MODEL_LAYER_SEARCH_SPACE, input_search_space=constants.INPUT_SEARCH_SPACE)), optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), dropout_rate=0.5, metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, dataset_loader=datasetloader.DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES, constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE), num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES):
+    def __init__(self, num_target_classes, loss_function, controller=randomcontroller.RandomController(searchspace.SearchSpace(model_layer_search_space=constants.MODEL_LAYER_SEARCH_SPACE, input_search_space=constants.INPUT_SEARCH_SPACE)), optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), dropout_rate=0.5, metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, dataset_loader=datasetloader.DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES, constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE), num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
         self.controller = controller
@@ -24,6 +24,10 @@ class InputModelGenerator:
         self.number_of_anomalous_files = number_of_anomalous_files
         self.path_to_normal_files = path_to_normal_files
         self.path_to_anomalous_files = path_to_anomalous_files
+        self.frame_size = frame_size
+        self.hop_length = hop_length
+        self.num_mel_banks = num_mel_banks
+        self.num_mfccs = num_mfccs
         self.pareto_optimal_models = []
 
     def run_input_nas(self, num_of_samples):
@@ -34,7 +38,7 @@ class InputModelGenerator:
 
             # Create input and model from configuration
             input_model = inputmodel.InputModel(
-                input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer)
+                input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length, num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer)
 
             # Evaluate performance of model
             input_model.evaluate_input_model(self.num_epochs, self.batch_size)

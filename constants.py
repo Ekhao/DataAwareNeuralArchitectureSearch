@@ -21,7 +21,7 @@ DATASET_CHANNEL_TO_USE = 1
 
 # Audio preprocessing parameters
 FRAME_SIZE = 2048  # Traditional values
-HOP_SIZE = 512  # Traditional values
+HOP_LENGTH = 512  # Traditional values
 NUMBER_OF_MEL_FILTER_BANKS = 80  # Typically between 40 and 128
 NUMBER_OF_MFCCS = 13  # Traditional values
 

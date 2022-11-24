@@ -1,5 +1,3 @@
-from constants import *
-
 from joblib import Parallel, delayed
 import librosa
 from sklearn.model_selection import train_test_split
@@ -46,7 +44,7 @@ class DatasetLoader:
 
     # This method is called to load the dataset according to a specific input configuration.
     # The base dataset (full granularity) should already have been loaded in the constructor of this class.
-    def load_dataset(self, target_sr, preprocessing_type) -> tuple:
+    def load_dataset(self, target_sr, preprocessing_type, frame_size, hop_length, num_mel_banks=None, num_mfccs=None) -> tuple:
         normal_audio = copy.deepcopy(self.base_normal_audio)
         anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
 
@@ -63,21 +61,21 @@ class DatasetLoader:
                 return (normal_audio, anomalous_audio)
             case "spectrogram":
                 normal_spectogram = Parallel(
-                    n_jobs=-1)(delayed(self.create_spectrogram)(audio) for audio in normal_audio)
+                    n_jobs=-1)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in normal_audio)
                 anomalous_spectrograms = Parallel(
-                    n_jobs=-1)(delayed(self.create_spectrogram)(audio) for audio in anomalous_audio)
+                    n_jobs=-1)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in anomalous_audio)
                 return (normal_spectogram, anomalous_spectrograms)
             case "mel-spectrogram":
                 normal_mel_spectogram = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr) for audio in normal_audio)
+                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in normal_audio)
                 anomalous_mel_spectrograms = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr) for audio in anomalous_audio)
+                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in anomalous_audio)
                 return (normal_mel_spectogram, anomalous_mel_spectrograms)
             case "mfcc":
                 normal_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr) for audio in normal_audio)
+                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in normal_audio)
                 anomalous_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr) for audio in anomalous_audio)
+                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in anomalous_audio)
                 return (normal_mfccs, anomalous_mfccs)
             case _:
                 raise NotImplementedError(
@@ -87,23 +85,23 @@ class DatasetLoader:
         audio, _ = librosa.load(file, sr=sr)
         return audio
 
-    def create_spectrogram(self, audio_sample):
+    def create_spectrogram(self, audio_sample, frame_size, hop_length):
         # |stft|^2 is the power spectrogram, |stft| is the amplitude spectrogram
         # We can convert both into the log-amplitude spectrogram using librosa.power_to_db or librosa.amplitude_to_db respectivly
         # It is unclear whether we should do a log representation of both amplitude and frequence in a standard spectrogram.
         # In this function we only do a log representation of amplitude.
         # We always return the spectrograms with an additional axis as this is expected by tensorflows convolutional layers (since images have a channel dimension)
-        return librosa.power_to_db(np.abs(librosa.stft(audio_sample, n_fft=FRAME_SIZE, hop_length=HOP_SIZE)) ** 2)[..., tf.newaxis]
+        return librosa.power_to_db(np.abs(librosa.stft(audio_sample, n_fft=frame_size, hop_length=hop_length)) ** 2)[..., tf.newaxis]
 
-    def create_mel_spectrogram(self, audio_sample, sample_rate):
+    def create_mel_spectrogram(self, audio_sample, sample_rate, frame_size, hop_length, num_mel_banks):
         # Unlike for the spectrogram, the mel spectrogram has a directly accessible function in librosa.
-        return librosa.power_to_db(librosa.feature.melspectrogram(y=audio_sample, sr=sample_rate, n_fft=FRAME_SIZE, hop_length=HOP_SIZE, n_mels=NUMBER_OF_MEL_FILTER_BANKS))[..., tf.newaxis]
+        return librosa.power_to_db(librosa.feature.melspectrogram(y=audio_sample, sr=sample_rate, n_fft=frame_size, hop_length=hop_length, n_mels=num_mel_banks))[..., tf.newaxis]
 
-    def create_mfcc(self, audio_sample, sample_rate):
+    def create_mfcc(self, audio_sample, sample_rate, frame_size, hop_length, num_mel_banks, num_mfccs):
         # Maybe also do first and second derivatives - is supposedly improving accuracy
         # Is often not used that much in deep learning, and is made to understand speech and music - not machine sounds.
         mfcc = librosa.feature.mfcc(
-            y=audio_sample, sr=sample_rate, n_fft=FRAME_SIZE, hop_length=HOP_SIZE, n_mels=NUMBER_OF_MEL_FILTER_BANKS, n_mfcc=NUMBER_OF_MFCCS)
+            y=audio_sample, sr=sample_rate, n_fft=frame_size, hop_length=hop_length, n_mels=num_mel_banks, n_mfcc=num_mfccs)
         delta_mfcc = librosa.feature.delta(mfcc)
         delta2_mfcc = librosa.feature.delta(mfcc, order=2)
         return np.concatenate((mfcc, delta_mfcc, delta2_mfcc))[..., tf.newaxis]
