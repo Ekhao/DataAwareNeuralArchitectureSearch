@@ -8,24 +8,24 @@ import numpy as np
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_size=TOURNAMENT_SIZE) -> None:
+    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_amount=TOURNAMENT_AMOUNT) -> None:
         super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
-        self.unevaluated_population = queue.SimpleQueue()
+        self.unevaluated_input_model = queue.SimpleQueue()
         self.population = []
         self.population_size = population_size
         self.input_search_space = input_search_space
         self.model_layer_search_space = model_layer_search_space
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
-        self.tournament_size = tournament_size
+        self.tournament_size = tournament_amount
 
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
         if trivial_initialization:
             for i in range(population_size):
-                self.unevaluated_population.put((random.randrange(
+                self.unevaluated_input_model.put((random.randrange(
                     0, super().get_number_of_search_space_combinations(input_search_space)), [random.randrange(0, super().get_number_of_search_space_combinations(model_layer_search_space))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
@@ -35,12 +35,12 @@ class EvolutionaryController(controller.Controller):
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randrange(
                         0, super().get_number_of_search_space_combinations(model_layer_search_space)))
-                self.unevaluated_population.put((random.randrange(
+                self.unevaluated_input_model.put((random.randrange(
                     0, super().get_number_of_search_space_combinations(input_search_space)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
-        return self.unevaluated_population.get(block=False)
+        return self.unevaluated_input_model.get(block=False)
 
     # Updates the input_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
@@ -50,7 +50,7 @@ class EvolutionaryController(controller.Controller):
         self.population.append((input_model, fitness))
 
         # When an entire population has been evaluated we generate a new population
-        if self.unevaluated_population.empty():
+        if self.unevaluated_input_model.empty():
             self.__generate_new_population()
 
     def __evaluate_fitness(self, input_model):
@@ -76,7 +76,15 @@ class EvolutionaryController(controller.Controller):
     def __tournament_selection(self):
         tournaments = np.array_split(self.population, self.tournament_size)
 
-        winners = map(lambda x: x[1].max(), tournaments)
+        winners = []
+        for tournament in tournaments:
+            best_tournament_fitness = 0
+            best_contestant = None
+            for contestant in tournament:
+                if contestant[1] > best_tournament_fitness:
+                    best_tournament_fitness = contestant[1]
+                    best_contestant = contestant
+            winners.append(best_contestant)
 
         return winners
 
