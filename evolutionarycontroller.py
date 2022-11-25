@@ -53,7 +53,8 @@ class EvolutionaryController(controller.Controller):
         if self.unevaluated_input_model.empty():
             self.__generate_new_population()
 
-    def __evaluate_fitness(self, input_model):
+    @staticmethod
+    def __evaluate_fitness(input_model):
         return input_model.accuracy + input_model.precision + input_model.recall
 
     def __generate_new_population(self):
