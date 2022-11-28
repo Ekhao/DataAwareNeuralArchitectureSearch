@@ -61,3 +61,79 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
                                               for i in range(10)]
         winners = evolutionary_controller._EvolutionaryController__tournament_selection()
         self.assertEqual(len(winners), 5)
+
+    def test_new_convolutional_layer_mutation(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=32, trivial_initialization=True, population_size=2)
+        input_configuration = (24000, "spectrogram")
+        model_configuration = [
+            (8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
+        encoded_input_configuration = evolutionary_controller.search_space.input_encode(
+            input_configuration)
+        encoded_model_configuration = evolutionary_controller.search_space.model_encode(
+            model_configuration)
+
+        mutated_input_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__new_convolutional_layer_mutation(
+            (encoded_input_configuration, encoded_model_configuration))
+
+        self.assertEqual(input_configuration, evolutionary_controller.search_space.input_decode(
+            mutated_input_configuration))
+        self.assertEqual(len(model_configuration) + 1, len(
+            evolutionary_controller.search_space.model_decode(mutated_model_configuration)))
+
+    def test_remove_convolutional_layer_mutation(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=32, trivial_initialization=True, population_size=2)
+        input_configuration = (24000, "spectrogram")
+        model_configuration = [
+            (8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
+        encoded_input_configuration = evolutionary_controller.search_space.input_encode(
+            input_configuration)
+        encoded_model_configuration = evolutionary_controller.search_space.model_encode(
+            model_configuration)
+
+        mutated_input_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__remove_convolutional_layer_mutation(
+            (encoded_input_configuration, encoded_model_configuration))
+
+        self.assertEqual(input_configuration, evolutionary_controller.search_space.input_decode(
+            mutated_input_configuration))
+        self.assertEqual([(8, 3, "relu"), (128, 3, "relu")],
+                         evolutionary_controller.search_space.model_decode(mutated_model_configuration))
+
+    def test_increase_number_of_filters_mutation(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=32, trivial_initialization=True, population_size=2)
+        input_configuration = (24000, "spectrogram")
+        model_configuration = [
+            (8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
+        encoded_input_configuration = evolutionary_controller.search_space.input_encode(
+            input_configuration)
+        encoded_model_configuration = evolutionary_controller.search_space.model_encode(
+            model_configuration)
+
+        mutated_input_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__increase_number_of_filters_mutation(
+            (encoded_input_configuration, encoded_model_configuration))
+
+        self.assertEqual(input_configuration, evolutionary_controller.search_space.input_decode(
+            mutated_input_configuration))
+        self.assertEqual([(8, 3, "relu"), (128, 3, "relu"), (128, 5, "sigmoid")],
+                         evolutionary_controller.search_space.model_decode(mutated_model_configuration))
+
+    def test_decrease_number_of_filters_mutation(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=32, trivial_initialization=True, population_size=2)
+        input_configuration = (24000, "spectrogram")
+        model_configuration = [
+            (8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
+        encoded_input_configuration = evolutionary_controller.search_space.input_encode(
+            input_configuration)
+        encoded_model_configuration = evolutionary_controller.search_space.model_encode(
+            model_configuration)
+
+        mutated_input_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__decrease_number_of_filters_mutation(
+            (encoded_input_configuration, encoded_model_configuration))
+
+        self.assertEqual(input_configuration, evolutionary_controller.search_space.input_decode(
+            mutated_input_configuration))
+        self.assertEqual([(8, 3, "relu"), (128, 3, "relu"), (32, 5, "sigmoid")],
+                         evolutionary_controller.search_space.model_decode(mutated_model_configuration))

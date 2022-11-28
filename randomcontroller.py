@@ -1,23 +1,24 @@
 import controller
-from constants import *
+import constants
 import random
 
 
 class RandomController (controller.Controller):
-    def __init__(self, search_space, seed=None):
+    def __init__(self, search_space, seed=None, max_num_layers=constants.MAX_NUM_LAYERS):
         super().__init__(search_space)
         random.seed(seed)
+        self.max_num_layers = max_num_layers
 
     def generate_configuration(self):
         input_configuation = random.randrange(
-            0, super().get_number_of_search_space_combinations(INPUT_SEARCH_SPACE))
+            0, len(self.search_space.input_search_space))
 
         # Generate a number of layers. Maybe have this be something other than uniformly distributed at some point.
-        number_of_layers = random.randint(1, MAX_NUM_LAYERS)
+        number_of_layers = random.randint(1, self.max_num_layers)
         model_layer_configuration = []
         for layer in range(number_of_layers):
             model_layer_configuration.append(random.randrange(
-                0, super().get_number_of_search_space_combinations(MODEL_LAYER_SEARCH_SPACE)))
+                0, len(self.search_space.model_layer_search_space)))
 
         return (input_configuation, model_layer_configuration)
 

@@ -8,15 +8,13 @@ import numpy as np
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, input_search_space=INPUT_SEARCH_SPACE, model_layer_search_space=MODEL_LAYER_SEARCH_SPACE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_amount=TOURNAMENT_AMOUNT) -> None:
+    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_amount=TOURNAMENT_AMOUNT) -> None:
         super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
         self.unevaluated_input_model = queue.SimpleQueue()
         self.population = []
         self.population_size = population_size
-        self.input_search_space = input_search_space
-        self.model_layer_search_space = model_layer_search_space
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
         self.tournament_size = tournament_amount
@@ -26,7 +24,7 @@ class EvolutionaryController(controller.Controller):
         if trivial_initialization:
             for i in range(population_size):
                 self.unevaluated_input_model.put((random.randrange(
-                    0, super().get_number_of_search_space_combinations(input_search_space)), [random.randrange(0, super().get_number_of_search_space_combinations(model_layer_search_space))]))
+                    0, len(self.search_space.input_search_space)), [random.randrange(0, len(self.search_space.model_layer_search_space))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
             for i in range(population_size):
@@ -34,9 +32,9 @@ class EvolutionaryController(controller.Controller):
                 model_layer_configuration = []
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randrange(
-                        0, super().get_number_of_search_space_combinations(model_layer_search_space)))
+                        0, len(self.search_space.model_layer_search_space)))
                 self.unevaluated_input_model.put((random.randrange(
-                    0, super().get_number_of_search_space_combinations(input_search_space)), model_layer_configuration))
+                    0, len(self.search_space.input_search_space)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
@@ -136,15 +134,16 @@ class EvolutionaryController(controller.Controller):
     # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
     def __new_convolutional_layer_mutation(self, configuration):
         new_conv_layer = random.randrange(
-            0, super().get_number_of_search_space_combinations(self.model_layer_search_space))
+            0, len(self.search_space.model_layer_search_space))
         assert type(configuration[1]) == list
-        return configuration[1].append(new_conv_layer)
+        configuration[1].append(new_conv_layer)
+        return configuration
 
     # Remove the last convolutional layer of the model
     def __remove_convolutional_layer_mutation(self, configuration):
         assert type(configuration[1]) == list
         configuration[1].pop()
-        return configuration[1]
+        return configuration
 
     # Increase the filter size of a random convolutional layer
     def __increase_filter_size_mutation(self, configuration):
@@ -204,11 +203,13 @@ class EvolutionaryController(controller.Controller):
 
         # Change amount of filters. Amount of filters in the current search space is in the first position of the search space tuple.
         current_filter_amount = decoded_layer[0]
-        new_filter_size = next(
-            (x for x in self.search_space.model_layer_search_space[0] if x > current_filter_amount), max(self.search_space.model_layer_search_space[0]))
+        for seach_space_filter_amounts in self.search_space.model_layer_search_space.values():
+            if seach_space_filter_amounts[0] > current_filter_amount:
+                new_filter_size = seach_space_filter_amounts[0]
+                break
 
         # Encode layer again
-        decoded_layer[0] = new_filter_size
+        decoded_layer = (new_filter_size, decoded_layer[1], decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -227,11 +228,14 @@ class EvolutionaryController(controller.Controller):
 
         # Change filter size. Amount of filters in the current search space is in the first position of the search space tuple.
         current_filter_amount = decoded_layer[0]
-        new_filter_size = next(
-            (x for x in self.search_space.model_layer_search_space[0].reverse() if x < current_filter_amount), min(self.search_space.model_layer_search_space[0]))
+        for seach_space_filter_amounts in reversed(list(self.search_space.model_layer_search_space.values())):
+            if seach_space_filter_amounts[0] < current_filter_amount:
+                new_filter_size = seach_space_filter_amounts[0]
+                break
 
         # Encode layer again
-        decoded_layer[0] = new_filter_size
+        decoded_layer = (
+            new_filter_size, decoded_layer[1], decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -322,7 +326,3 @@ class EvolutionaryController(controller.Controller):
 
     def __random_conv_layer_number(self, configuration):
         return random.randrange(0, len(configuration[1]))
-
-    # Maybe split evaluation functions into cheap and expensive to calculate functions and evaluate the cheap functions more often. Like in LEMONADE.
-
-    # Methods to improve evaluation speed: Have offspring inherit the weights of their parents, Early stopping of training e.g. after a few epochs, reduce the size of the training set, reducing the size of the ENAS population (Not sure that this is such a good idea), not reevaluating the same individuals several times.
