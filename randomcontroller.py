@@ -11,14 +11,14 @@ class RandomController (controller.Controller):
 
     def generate_configuration(self):
         input_configuation = random.randrange(
-            0, len(self.search_space.input_search_space))
+            0, len(self.search_space.input_search_space_enumerated))
 
         # Generate a number of layers. Maybe have this be something other than uniformly distributed at some point.
         number_of_layers = random.randint(1, self.max_num_layers)
         model_layer_configuration = []
         for layer in range(number_of_layers):
             model_layer_configuration.append(random.randrange(
-                0, len(self.search_space.model_layer_search_space)))
+                0, len(self.search_space.model_layer_search_space_enumerated)))
 
         return (input_configuation, model_layer_configuration)
 

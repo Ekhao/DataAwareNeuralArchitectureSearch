@@ -8,9 +8,9 @@ class SearchSpaceTestCase(unittest.TestCase):
     def test_search_space_gen(self):
         search_space = searchspace.SearchSpace(
             ([3, 5, 7], ["relu"]), (["Spectrogram", "MFCC"], [48000, 24000]))
-        self.assertEqual(search_space.input_search_space, {0: ("Spectrogram", 48000), 1: (
+        self.assertEqual(search_space.input_search_space_enumerated, {0: ("Spectrogram", 48000), 1: (
             "Spectrogram", 24000), 2: ("MFCC", 48000), 3: ("MFCC", 24000)})
-        self.assertEqual(search_space.model_layer_search_space, {
+        self.assertEqual(search_space.model_layer_search_space_enumerated, {
             0: (3, "relu"), 1: (5, "relu"), 2: (7, "relu")})
 
     def test_input_decode(self):

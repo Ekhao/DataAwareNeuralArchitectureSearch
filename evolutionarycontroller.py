@@ -24,7 +24,7 @@ class EvolutionaryController(controller.Controller):
         if trivial_initialization:
             for i in range(population_size):
                 self.unevaluated_input_model.put((random.randrange(
-                    0, len(self.search_space.input_search_space)), [random.randrange(0, len(self.search_space.model_layer_search_space))]))
+                    0, len(self.search_space.input_search_space_enumerated)), [random.randrange(0, len(self.search_space.model_layer_search_space_enumerated))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
             for i in range(population_size):
@@ -32,9 +32,9 @@ class EvolutionaryController(controller.Controller):
                 model_layer_configuration = []
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randrange(
-                        0, len(self.search_space.model_layer_search_space)))
+                        0, len(self.search_space.model_layer_search_space_enumerated)))
                 self.unevaluated_input_model.put((random.randrange(
-                    0, len(self.search_space.input_search_space)), model_layer_configuration))
+                    0, len(self.search_space.input_search_space_enumerated)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
@@ -134,7 +134,7 @@ class EvolutionaryController(controller.Controller):
     # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
     def __new_convolutional_layer_mutation(self, configuration):
         new_conv_layer = random.randrange(
-            0, len(self.search_space.model_layer_search_space))
+            0, len(self.search_space.model_layer_search_space_enumerated))
         assert type(configuration[1]) == list
         configuration[1].append(new_conv_layer)
         return configuration
@@ -157,11 +157,18 @@ class EvolutionaryController(controller.Controller):
 
         # Change filter size. Filter size in the current search space is in the second position of the search space tuple.
         current_filter_size = decoded_layer[1]
-        new_filter_size = next(
-            (x for x in self.search_space.model_layer_search_space[1] if x > current_filter_size), max(self.search_space.model_layer_search_space[1]))
+        new_filter_size = None
+        for seach_space_filter_size in self.search_space.model_layer_search_space_options[1]:
+            if seach_space_filter_size > current_filter_size:
+                new_filter_size = seach_space_filter_size
+                break
+        if new_filter_size == None:
+            new_filter_size = max(
+                self.search_space.model_layer_search_space[1])
 
         # Encode layer again
-        decoded_layer[1] = new_filter_size
+        decoded_layer = (
+            decoded_layer[0], new_filter_size, decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -180,11 +187,17 @@ class EvolutionaryController(controller.Controller):
 
         # Change filter size. Filter size in the current search space is in the second position of the search space tuple.
         current_filter_size = decoded_layer[1]
-        new_filter_size = next(
-            (x for x in self.search_space.model_layer_search_space[1].reverse() if x < current_filter_size), min(self.search_space.model_layer_search_space[1]))
+        new_filter_size = None
+        for seach_space_filter_size in reversed(self.search_space.model_layer_search_space_options[1]):
+            if seach_space_filter_size < current_filter_size:
+                new_filter_size = seach_space_filter_size
+                break
+        if new_filter_size == None:
+            new_filter_size = min(
+                self.search_space.model_layer_search_space[1])
 
         # Encode layer again
-        decoded_layer[1] = new_filter_size
+        decoded_layer = (decoded_layer[0], new_filter_size, decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -201,15 +214,19 @@ class EvolutionaryController(controller.Controller):
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
 
-        # Change amount of filters. Amount of filters in the current search space is in the first position of the search space tuple.
+        # Change filter amount. Amount of filters in the current search space is in the first position of the search space tuple.
         current_filter_amount = decoded_layer[0]
-        for seach_space_filter_amounts in self.search_space.model_layer_search_space.values():
-            if seach_space_filter_amounts[0] > current_filter_amount:
-                new_filter_size = seach_space_filter_amounts[0]
+        new_filter_amount = None
+        for seach_space_filter_amount in self.search_space.model_layer_search_space_options[0]:
+            if seach_space_filter_amount > current_filter_amount:
+                new_filter_amount = seach_space_filter_amount
                 break
+        if new_filter_amount == None:
+            new_filter_amount = max(
+                self.search_space.model_layer_search_space_options[0])
 
         # Encode layer again
-        decoded_layer = (new_filter_size, decoded_layer[1], decoded_layer[2])
+        decoded_layer = (new_filter_amount, decoded_layer[1], decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -226,16 +243,20 @@ class EvolutionaryController(controller.Controller):
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
 
-        # Change filter size. Amount of filters in the current search space is in the first position of the search space tuple.
+        # Change filter amount. Amount of filters in the current search space is in the first position of the search space tuple.
         current_filter_amount = decoded_layer[0]
-        for seach_space_filter_amounts in reversed(list(self.search_space.model_layer_search_space.values())):
-            if seach_space_filter_amounts[0] < current_filter_amount:
-                new_filter_size = seach_space_filter_amounts[0]
+        new_filter_amount = None
+        for seach_space_filter_amount in reversed(self.search_space.model_layer_search_space_options[0]):
+            if seach_space_filter_amount < current_filter_amount:
+                new_filter_amount = seach_space_filter_amount
                 break
+        if new_filter_amount == None:
+            new_filter_amount = min(
+                self.search_space.model_layer_search_space_options[0])
 
         # Encode layer again
         decoded_layer = (
-            new_filter_size, decoded_layer[1], decoded_layer[2])
+            new_filter_amount, decoded_layer[1], decoded_layer[2])
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -255,12 +276,14 @@ class EvolutionaryController(controller.Controller):
         # Change activation function. Activation function in the current search space is in the third position of the search space tuple.
         current_activation_function = decoded_layer[2]
         new_activation_function = current_activation_function
+
         while current_activation_function == new_activation_function:
             new_activation_function = random.choice(
-                self.search_space.model_layer_search_space[2])
+                self.search_space.model_layer_search_space_options[2])
 
         # Encode layer again
-        decoded_layer[2] = new_activation_function
+        decoded_layer = (
+            decoded_layer[0], decoded_layer[1], new_activation_function)
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
@@ -274,15 +297,21 @@ class EvolutionaryController(controller.Controller):
 
         # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
         current_sample_rate = decoded_input[0]
-        new_sample_rate = next(
-            (x for x in self.search_space.input_search_space[0] if x > current_sample_rate), max(self.search_space.input_search_space[0]))
+        new_sample_rate = None
+        for seach_space_sample_rate in reversed(self.search_space.input_search_space_options[0]):
+            if seach_space_sample_rate > current_sample_rate:
+                new_sample_rate = seach_space_sample_rate
+                break
+        if new_sample_rate == None:
+            new_sample_rate = max(
+                self.search_space.input_search_space_options[0])
 
         # Encode layer again
-        decoded_input[0] = new_sample_rate
+        decoded_input = (new_sample_rate, decoded_input[1])
         new_input = self.search_space.input_encode(decoded_input)
 
         # Add the layer to the configuration again
-        configuration[0] = new_input
+        configuration = (new_input, configuration[1])
 
         return configuration
 
@@ -292,15 +321,21 @@ class EvolutionaryController(controller.Controller):
 
         # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
         current_sample_rate = decoded_input[0]
-        new_sample_rate = next(
-            (x for x in self.search_space.input_search_space[0].reverse() if x < current_sample_rate), min(self.search_space.input_search_space[0]))
+        new_sample_rate = None
+        for seach_space_sample_rate in self.search_space.input_search_space_options[0]:
+            if seach_space_sample_rate < current_sample_rate:
+                new_sample_rate = seach_space_sample_rate
+                break
+        if new_sample_rate == None:
+            new_sample_rate = min(
+                self.search_space.input_search_space_options[0])
 
         # Encode layer again
-        decoded_input[0] = new_sample_rate
+        decoded_input = (new_sample_rate, decoded_input[1])
         new_input = self.search_space.input_encode(decoded_input)
 
         # Add the layer to the configuration again
-        configuration[0] = new_input
+        configuration = (new_input, configuration[1])
 
         return configuration
 
@@ -313,14 +348,14 @@ class EvolutionaryController(controller.Controller):
         new_preprocessing = current_preprocessing
         while new_preprocessing == current_preprocessing:
             new_preprocessing = random.choice(
-                self.search_space.input_search_space[1])
+                self.search_space.input_search_space_options[1])
 
         # Encode layer again
-        decoded_input[1] = new_preprocessing
+        decoded_input = (decoded_input[0], new_preprocessing)
         new_input = self.search_space.input_encode(decoded_input)
 
         # Add the layer to the configuration again
-        configuration[0] = new_input
+        configuration = (new_input, configuration[1])
 
         return configuration
 
