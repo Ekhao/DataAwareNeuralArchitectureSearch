@@ -2,7 +2,7 @@
 import controller
 from constants import *
 import random
-import queue
+import copy
 import numpy as np
 
 
@@ -12,7 +12,7 @@ class EvolutionaryController(controller.Controller):
         super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
-        self.unevaluated_input_model = queue.SimpleQueue()
+        self.unevaluated_configurations = []
         self.population = []
         self.population_size = population_size
         self.max_num_layers = max_num_layers
@@ -23,7 +23,7 @@ class EvolutionaryController(controller.Controller):
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
         if trivial_initialization:
             for i in range(population_size):
-                self.unevaluated_input_model.put((random.randrange(
+                self.unevaluated_configurations.append((random.randrange(
                     0, len(self.search_space.input_search_space_enumerated)), [random.randrange(0, len(self.search_space.model_layer_search_space_enumerated))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
@@ -33,12 +33,12 @@ class EvolutionaryController(controller.Controller):
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randrange(
                         0, len(self.search_space.model_layer_search_space_enumerated)))
-                self.unevaluated_input_model.put((random.randrange(
+                self.unevaluated_configurations.append((random.randrange(
                     0, len(self.search_space.input_search_space_enumerated)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
-        return self.unevaluated_input_model.get(block=False)
+        return self.unevaluated_configurations.pop(0)
 
     # Updates the input_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
@@ -48,7 +48,7 @@ class EvolutionaryController(controller.Controller):
         self.population.append((input_model, fitness))
 
         # When an entire population has been evaluated we generate a new population
-        if self.unevaluated_input_model.empty():
+        if not self.unevaluated_configurations:
             self.__generate_new_population()
 
     @staticmethod
@@ -127,11 +127,8 @@ class EvolutionaryController(controller.Controller):
             mutations.append(mutation)
 
         return mutations
-
-    def __create_crossovers(self, breeders, amount):
-        raise NotImplementedError()
-
     # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
+
     def __new_convolutional_layer_mutation(self, configuration):
         new_conv_layer = random.randrange(
             0, len(self.search_space.model_layer_search_space_enumerated))
@@ -361,3 +358,50 @@ class EvolutionaryController(controller.Controller):
 
     def __random_conv_layer_number(self, configuration):
         return random.randrange(0, len(configuration[1]))
+
+    def __create_crossovers(self, breeders, amount):
+        crossovers = []
+        for i in range(amount):
+            random_parents = random.choices(breeders, k=2)
+            crossovers.append(self.__crossover(*random_parents))
+
+        return crossovers
+
+    def __crossover(self, configuration1, configuration2):
+        decoded_input1 = self.search_space.input_decode(configuration1[0])
+        decoded_input2 = self.search_space.input_decode(configuration2[0])
+
+        decoded_model1 = self.search_space.model_decode(configuration1[1])
+        decoded_model2 = self.search_space.model_decode(configuration2[1])
+
+        new_input = (random.choice((decoded_input1[0], decoded_input2[0])), random.choice((
+            decoded_input1[1], decoded_input2[1])))
+
+        num_layers_model1 = len(decoded_model1)
+        num_layers_model2 = len(decoded_model2)
+
+        if num_layers_model1 == num_layers_model2:
+            num_layers_new_model = num_layers_model1
+            min_layers = num_layers_model1
+        else:
+            min_layers = min(num_layers_model1, num_layers_model2)
+            max_layers = max(num_layers_model1, num_layers_model2)
+
+            num_layers_new_model = random.randint(min_layers, max_layers)
+
+        new_model = []
+        for i in range(min_layers):
+            layer = (random.choice((decoded_model1[i][0], decoded_model2[i][0])), random.choice(
+                (decoded_model1[i][1], decoded_model2[i][1])), random.choice((decoded_model1[i][2], decoded_model2[i][2])))
+            new_model.append(layer)
+
+        if num_layers_model1 > num_layers_model2:
+            for i in range(min_layers, num_layers_new_model):
+                new_model.append(copy.deepcopy(decoded_model1[i]))
+        elif num_layers_model2 > num_layers_model1:
+            for i in range(min_layers, num_layers_new_model):
+                new_model.append(copy.deepcopy(decoded_model2[i]))
+
+        encoded_input = self.search_space.input_encode(new_input)
+        encoded_model = self.search_space.model_encode(new_model)
+        return (encoded_input, encoded_model)

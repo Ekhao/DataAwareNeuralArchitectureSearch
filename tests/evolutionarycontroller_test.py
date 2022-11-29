@@ -18,10 +18,10 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
     def test_init(self):
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=32, trivial_initialization=True, population_size=2)
-        self.assertEqual(evolutionary_controller.unevaluated_input_model.get(), (
+        self.assertEqual(evolutionary_controller.unevaluated_configurations.pop(0), (
             2, [6]))
         self.assertEqual(
-            evolutionary_controller.unevaluated_input_model.get(), (4, [9]))
+            evolutionary_controller.unevaluated_configurations.pop(0), (4, [9]))
 
     def test_generate_configuration(self):
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
@@ -289,3 +289,74 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
             mutated_input_configuration))
         self.assertEqual(model_configuration,
                          evolutionary_controller.search_space.model_decode(mutated_model_configuration))
+
+    def test_crossover(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=50, trivial_initialization=True, population_size=2)
+
+        input_configuration1 = (6000, "mfcc")
+        model_configuration1 = [
+            (8, 5, "relu"), (4, 3, "relu"), (64, 3, "sigmoid")]
+        encoded_input_configuration1 = evolutionary_controller.search_space.input_encode(
+            input_configuration1)
+        encoded_model_configuration1 = evolutionary_controller.search_space.model_encode(
+            model_configuration1)
+
+        input_configuration2 = (12000, "mel-spectrogram")
+        model_configuration2 = [
+            (64, 5, "relu"), (64, 5, "relu"), (32, 3, "relu")]
+        encoded_input_configuration2 = evolutionary_controller.search_space.input_encode(
+            input_configuration2)
+        encoded_model_configuration2 = evolutionary_controller.search_space.model_encode(
+            model_configuration2)
+
+        crossovered_input_configuration, crossovered_model_configuration = evolutionary_controller._EvolutionaryController__crossover(
+            (encoded_input_configuration1, encoded_model_configuration1), (encoded_input_configuration2, encoded_model_configuration2))
+
+        self.assertEqual((6000, "mel-spectrogram"), evolutionary_controller.search_space.input_decode(
+            crossovered_input_configuration))
+        self.assertEqual([(64, 5, "relu"), (4, 3, "relu"), (32, 3, "relu")],
+                         evolutionary_controller.search_space.model_decode(crossovered_model_configuration))
+
+    def test_crossover_different_length(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=2, trivial_initialization=True, population_size=2)
+
+        input_configuration1 = (6000, "mfcc")
+        model_configuration1 = [
+            (8, 3, "sigmoid"), (4, 3, "sigmoid"), (64, 3, "sigmoid")]
+        encoded_input_configuration1 = evolutionary_controller.search_space.input_encode(
+            input_configuration1)
+        encoded_model_configuration1 = evolutionary_controller.search_space.model_encode(
+            model_configuration1)
+
+        input_configuration2 = (750, "spectrogram")
+        model_configuration2 = [
+            (64, 5, "relu"), (64, 5, "relu"), (32, 3, "relu"), (64, 3, "sigmoid"), (128, 5, "sigmoid")]
+        encoded_input_configuration2 = evolutionary_controller.search_space.input_encode(
+            input_configuration2)
+        encoded_model_configuration2 = evolutionary_controller.search_space.model_encode(
+            model_configuration2)
+
+        crossovered_input_configuration, crossovered_model_configuration = evolutionary_controller._EvolutionaryController__crossover(
+            (encoded_input_configuration1, encoded_model_configuration1), (encoded_input_configuration2, encoded_model_configuration2))
+
+        self.assertEqual((6000, "spectrogram"), evolutionary_controller.search_space.input_decode(
+            crossovered_input_configuration))
+        self.assertEqual([(8, 3, "sigmoid"), (64, 5, "relu"), (32, 3, "sigmoid"), (64, 3, "sigmoid")],
+                         evolutionary_controller.search_space.model_decode(crossovered_model_configuration))
+
+    def test_create_crossovers(self):
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"])), seed=2, trivial_initialization=False, population_size=10)
+
+        deep_copy_unevaluated_configurations = copy.deepcopy(
+            evolutionary_controller.unevaluated_configurations)
+
+        crossovers = evolutionary_controller._EvolutionaryController__create_crossovers(
+            evolutionary_controller.unevaluated_configurations, 5)
+
+        self.assertEqual(deep_copy_unevaluated_configurations,
+                         evolutionary_controller.unevaluated_configurations)
+        self.assertEqual(
+            crossovers, [(22, [11, 17, 14, 16]), (16, [4, 16]), (12, [15, 20]), (10, [5, 7, 7, 0, 5]), (1, [11, 17, 14])])
