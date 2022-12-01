@@ -5,7 +5,7 @@ import searchspace
 # Model Layer: Amount of filters, filter size, and activation function
 # Input: Sample rate and preprocessing type
 SEARCH_SPACE = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [
-    3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750], [
+    3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 375], [
         "spectrogram", "mel-spectrogram", "mfcc"]))
 
 # Model Parameters

@@ -1,6 +1,7 @@
 # A class that implements a controller based on evolutionary algorithms.
 import controller
-from constants import *
+import constants
+
 import random
 import copy
 import numpy as np
@@ -8,7 +9,7 @@ import numpy as np
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, search_space, seed=None, trivial_initialization=True, population_size=POPULATION_SIZE, max_num_layers=MAX_NUM_LAYERS, crossover_ratio=CROSSOVER_RATIO, tournament_amount=TOURNAMENT_AMOUNT) -> None:
+    def __init__(self, search_space, seed=None, population_size=constants.POPULATION_SIZE, max_num_layers=constants.MAX_NUM_LAYERS, crossover_ratio=constants.CROSSOVER_RATIO, tournament_amount=constants.TOURNAMENT_AMOUNT) -> None:
         super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
@@ -19,16 +20,17 @@ class EvolutionaryController(controller.Controller):
         self.crossover_ratio = crossover_ratio
         self.tournament_size = tournament_amount
 
+    def initialize_controller(self, trivial_initialization=True):
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
         if trivial_initialization:
-            for i in range(population_size):
+            for i in range(self.population_size):
                 self.unevaluated_configurations.append((random.randrange(
                     0, len(self.search_space.input_search_space_enumerated)), [random.randrange(0, len(self.search_space.model_layer_search_space_enumerated))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
-            for i in range(population_size):
-                number_of_layers = random.randint(1, max_num_layers)
+            for i in range(self.population_size):
+                number_of_layers = random.randint(1, self.max_num_layers)
                 model_layer_configuration = []
                 for layer in range(number_of_layers):
                     model_layer_configuration.append(random.randrange(
@@ -161,7 +163,7 @@ class EvolutionaryController(controller.Controller):
                 break
         if new_filter_size == None:
             new_filter_size = max(
-                self.search_space.model_layer_search_space[1])
+                self.search_space.model_layer_search_space_options[1])
 
         # Encode layer again
         decoded_layer = (
@@ -191,7 +193,7 @@ class EvolutionaryController(controller.Controller):
                 break
         if new_filter_size == None:
             new_filter_size = min(
-                self.search_space.model_layer_search_space[1])
+                self.search_space.model_layer_search_space_options[1])
 
         # Encode layer again
         decoded_layer = (decoded_layer[0], new_filter_size, decoded_layer[2])

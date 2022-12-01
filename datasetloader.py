@@ -49,9 +49,9 @@ class DatasetLoader:
         anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
 
         normal_audio = Parallel(
-            n_jobs=-1)(delayed(librosa.resample)(audio, self.base_sr, target_sr) for audio in normal_audio)
+            n_jobs=-1)(delayed(librosa.resample)(audio, orig_sr=self.base_sr, target_sr=target_sr) for audio in normal_audio)
         anomalous_audio = Parallel(n_jobs=-1)(delayed(librosa.resample)
-                                              (audio, self.base_sr, target_sr) for audio in anomalous_audio)
+                                              (audio, orig_sr=self.base_sr, target_sr=target_sr) for audio in anomalous_audio)
 
         match preprocessing_type:
             case "waveform":
@@ -102,6 +102,6 @@ class DatasetLoader:
         # Is often not used that much in deep learning, and is made to understand speech and music - not machine sounds.
         mfcc = librosa.feature.mfcc(
             y=audio_sample, sr=sample_rate, n_fft=frame_size, hop_length=hop_length, n_mels=num_mel_banks, n_mfcc=num_mfccs)
-        delta_mfcc = librosa.feature.delta(mfcc)
-        delta2_mfcc = librosa.feature.delta(mfcc, order=2)
+        delta_mfcc = librosa.feature.delta(mfcc, mode="nearest")
+        delta2_mfcc = librosa.feature.delta(mfcc, order=2, mode="nearest")
         return np.concatenate((mfcc, delta_mfcc, delta2_mfcc))[..., tf.newaxis]

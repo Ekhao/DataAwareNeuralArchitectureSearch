@@ -1,20 +1,18 @@
 import tensorflow as tf
+import os
 
-import randomcontroller
-import searchspace
 import inputmodel
 import datasetloader
 import constants
 
 
 class InputModelGenerator:
-    def __init__(self, num_target_classes, loss_function, controller=randomcontroller.RandomController(searchspace.SearchSpace(model_layer_search_space=constants.MODEL_LAYER_SEARCH_SPACE, input_search_space=constants.INPUT_SEARCH_SPACE)), optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), dropout_rate=0.5, metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, dataset_loader=datasetloader.DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES, constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE), num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
+    def __init__(self, num_target_classes, loss_function, controller, optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, dataset_loader=datasetloader.DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES, constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE), num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
         self.controller = controller
         self.search_space = controller.search_space
         self.optimizer = optimizer
-        self.dropout_rate = dropout_rate
         self.metrics = metrics
         self.width_dense_layer = width_dense_layer
         self.dataset_loader = dataset_loader
@@ -28,35 +26,45 @@ class InputModelGenerator:
         self.hop_length = hop_length
         self.num_mel_banks = num_mel_banks
         self.num_mfccs = num_mfccs
-        self.pareto_optimal_models = []
 
-    def run_input_nas(self, num_of_samples):
-        pareto_optimal_list = []
-        for sample in range(num_of_samples):
+    def run_input_nas(self, num_of_models):
+        pareto_optimal_models = []
+        for model_number in range(num_of_models):
+            # Print that we are now running a new sample
+            print("-" * os.get_terminal_size().columns)
+            print(f"Starting model number {model_number}")
+
             # Get configuration from controller
+            print("Generating model configuration...")
             input_configuration, model_configuration = self.controller.generate_configuration()
 
+            print("Creating input and model from configuration...")
             # Create input and model from configuration
             input_model = inputmodel.InputModel(
                 input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length, num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer)
 
-            # Evaluate performance of model
+            print("Evaluating performance of input and model")
+            # Evaluate performance of input and model
             input_model.evaluate_input_model(self.num_epochs, self.batch_size)
 
+            print(
+                f"Model{model_number} metrics:\nAccuracy: {input_model.accuracy}\nPrecision: {input_model.precision}\nRecall: {input_model.recall}")
+
+            print("Updating parameters of the controller...")
             # Update controller parameters
             self.controller.update_parameters(input_model)
 
-            print(
-                f"Accuracy: {input_model.accuracy}\nPrecision: {input_model.precision}\nRecall: {input_model.recall}")
-
+            print("Checking if model is on the pareto front...")
             # Save the models that are pareto optimal
-            self.pareto_optimal_models = self.save_pareto_optimal_models(
-                input_model)
+            pareto_optimal_models = self.save_pareto_optimal_models(
+                input_model, pareto_optimal_models)
 
-    def save_pareto_optimal_models(self, current_input_model):
-        new_list = self.pareto_optimal_models
-        pareto_dominated = False
-        for previous_input_model in self.pareto_optimal_models:
+        return pareto_optimal_models
+
+    def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
+        new_list = pareto_optimal_models
+        dominated = False
+        for previous_input_model in pareto_optimal_models:
             if previous_input_model.better_input_model(current_input_model):
                 dominated = True
                 break

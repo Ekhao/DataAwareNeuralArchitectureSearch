@@ -6,11 +6,14 @@ class SearchSpace:
         self.input_search_space_options = input_search_space
         self.model_layer_search_space_options = model_layer_search_space
 
+    # This method must be called first after init before the other methods of this class can be relied on.
+    # This is done so that a search space object can be created for e.g. tests and as a constant without using a significant amount of processing time.
+    def initialize_search_space(self):
         self.input_search_space_enumerated = self.search_space_enumerator(
-            *input_search_space)
+            *self.input_search_space_options)
         # Maybe add dropout and output layers to the model search space
         self.model_layer_search_space_enumerated = self.search_space_enumerator(
-            *model_layer_search_space)
+            *self.model_layer_search_space_options)
 
     def search_space_enumerator(self, *iterables) -> dict:
 
