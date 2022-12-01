@@ -1,11 +1,12 @@
 import tensorflow as tf
+import searchspace
 
-# Search space parameters
-# Amount of filters, filter size and activation function
-MODEL_LAYER_SEARCH_SPACE = ([2, 4, 8, 16, 32, 64, 128], [
-                            3, 5], ["relu", "sigmoid"])
-INPUT_SEARCH_SPACE = ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], [
-                      "spectrogram", "mel-spectrogram", "mfcc"])  # Sample rate and preprocessing type
+# Search space parameters:
+# Model Layer: Amount of filters, filter size, and activation function
+# Input: Sample rate and preprocessing type
+SEARCH_SPACE = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [
+    3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750], [
+        "spectrogram", "mel-spectrogram", "mfcc"]))
 
 # Model Parameters
 NUM_OUTPUT_CLASSES = 2
