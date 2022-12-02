@@ -5,11 +5,7 @@ import evolutionarycontroller
 
 import inputmodel
 import searchspace
-import datasetloader
-# Only for the path to test files. The rest of the constants should not be used in the test cases to not get failed test cases when changing the configuration.
-import constants
 
-import tensorflow as tf
 import copy
 import random
 
