@@ -47,12 +47,11 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
-        evolutionary_controller.initialize_controller(
-            trivial_initialization=True)
-        input_configuration, model_configuration = evolutionary_controller.generate_configuration()
-        input_model = inputmodel.InputModel(input_configuration=input_configuration, model_configuration=model_configuration, search_space=search_space, dataset_loader=datasetloader.    DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES, 90, 20, 1),
-                                            frame_size=2048, hop_length=512, num_mel_banks=80,     num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),   model_metrics=["accuracy"],  model_width_dense_layer=10)
-        input_model.evaluate_input_model(num_epochs=5, batch_size=32)
+        input_model = inputmodel.InputModel()
+        input_model.accuracy = 0.91
+        input_model.precision = 0.2
+        input_model.recall = 0.5
+
         evolutionary_controller.update_parameters(input_model)
         self.assertTrue(
             type(evolutionary_controller.population[0][0]) is inputmodel.InputModel)

@@ -62,9 +62,10 @@ class EvolutionaryController(controller.Controller):
         breeders = self.__tournament_selection()
 
         amount_of_new_individuals = self.population_size - len(breeders)
-        amount_of_mutations = amount_of_new_individuals / \
-            (1 - self.crossover_ratio)
-        amount_of_crossovers = amount_of_new_individuals / self.crossover_ratio
+        amount_of_mutations = round(amount_of_new_individuals /
+                                    (1 - self.crossover_ratio))
+        amount_of_crossovers = round(
+            amount_of_new_individuals / self.crossover_ratio)
 
         new_mutations = self.__create_mutations(
             individuals=breeders, amount=amount_of_mutations)

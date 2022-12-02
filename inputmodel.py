@@ -7,7 +7,11 @@ import numpy as np
 
 
 class InputModel:
-    def __init__(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> None:
+    def __init__(self) -> None:
+        pass
+
+    # A "secondary" constructor to allow the creation of an InputModelClass for access to methods without loading datasets a creating neural network models.
+    def initialize_input_model(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> None:
         self.input = self.create_input(
             input_configuration=input_configuration, search_space=search_space, dataset_loader=dataset_loader, frame_size=frame_size, hop_length=hop_length, num_mel_banks=num_mel_banks, num_mfccs=num_mfccs)
         # We need to subscript the dataset two times.
