@@ -1,5 +1,5 @@
 numpy
 joblib
 librosa
-sklearn
+scikit-learn
 tensorflow
