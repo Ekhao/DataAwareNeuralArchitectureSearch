@@ -1,15 +1,11 @@
 import unittest
 
 import inputmodelgenerator
-
-import datasetloader
 import randomcontroller
-import searchspace
 import constants
 import inputmodel
 
 import tensorflow as tf
-import copy
 
 
 class InputModelGeneratorTestCase(unittest.TestCase):
