@@ -1,6 +1,7 @@
 # In this simple implementation the NAS search space only consists of convolutional models.
 
 import inputmodelgenerator
+import datasetloader
 import constants
 import randomcontroller
 import evolutionarycontroller
@@ -24,6 +25,10 @@ def main():
     print("Initializing search space...")
     constants.SEARCH_SPACE.initialize_search_space()
 
+    print("Loading dataset files from persistent storage...")
+    dataset_loader = datasetloader.DatasetLoader(constants.PATH_TO_NORMAL_FILES, constants.PATH_TO_ANOMALOUS_FILES,
+                                                 constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE)
+
     print("Initializing controller...")
     if args.controller == "evolution":
         controller = evolutionarycontroller.EvolutionaryController(
@@ -35,7 +40,7 @@ def main():
             constants.SEARCH_SPACE, seed=args.seed)
 
     input_model_generator = inputmodelgenerator.InputModelGenerator(
-        constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller)
+        constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader)
     input_model_generator.run_input_nas(num_of_models=args.num_models)
 
 

@@ -37,6 +37,21 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
                          2)
         self.assertEqual(model_configuration, [6])
 
+    def test_generate_configuration_no_population(self):
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=32, population_size=2)
+        evolutionary_controller.initialize_controller(
+            trivial_initialization=True)
+        evolutionary_controller.unevaluated_configurations = []
+
+        input_configuration, model_configuration = evolutionary_controller.generate_configuration()
+        self.assertEqual(input_configuration,
+                         22)
+        self.assertEqual(model_configuration, [7])
+
     def test_update_parameters(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
             48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
@@ -70,10 +85,35 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
         input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
-        evolutionary_controller.population = [(copy.deepcopy(input_model), random.randint(0, 3))
+        evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
                                               for i in range(10)]
         winners = evolutionary_controller._EvolutionaryController__tournament_selection()
         self.assertEqual(len(winners), 5)
+
+    def test_tournament_selection_low_population(self):
+        random.seed(23)
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=32, population_size=2)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
+                                              for i in range(1)]
+        winners = evolutionary_controller._EvolutionaryController__tournament_selection()
+        self.assertEqual(len(winners), 1)
+
+    def test_tournament_selection_no_population(self):
+        random.seed(23)
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=32, population_size=2)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        evolutionary_controller.population = []
+        winners = evolutionary_controller._EvolutionaryController__tournament_selection()
+        self.assertEqual(len(winners), 0)
 
     def test_new_convolutional_layer_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
