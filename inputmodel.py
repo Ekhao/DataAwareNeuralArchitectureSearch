@@ -37,9 +37,12 @@ class InputModel:
         model.add(tf.keras.layers.Conv2D(
             filters=layer_configs[0][0], kernel_size=layer_configs[0][1], activation=layer_configs[0][2], input_shape=input_shape))
 
-        for layer_config in layer_configs[1:]:
-            model.add(tf.keras.layers.Conv2D(
-                filters=layer_config[0], kernel_size=layer_config[1], activation=layer_config[2]))
+        try:
+            for layer_config in layer_configs[1:]:
+                model.add(tf.keras.layers.Conv2D(
+                    filters=layer_config[0], kernel_size=layer_config[1], activation=layer_config[2]))
+        except ValueError:
+            return None
 
         # The standard convolutional model has dense layers at its end for classification - let us make the same assumption TODO: should be a part of search space
         model.add(tf.keras.layers.Flatten())

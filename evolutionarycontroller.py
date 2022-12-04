@@ -23,6 +23,7 @@ class EvolutionaryController(controller.Controller):
     def initialize_controller(self, trivial_initialization=True):
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
         # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
+        self.trivial_initialization = trivial_initialization
         if trivial_initialization:
             for i in range(self.population_size):
                 self.unevaluated_configurations.append((random.randrange(
@@ -40,24 +41,29 @@ class EvolutionaryController(controller.Controller):
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
+        # When an entire population has been evaluated we generate a new population
+        if not self.unevaluated_configurations:
+            self.__generate_new_population()
+
         return self.unevaluated_configurations.pop(0)
 
     # Updates the input_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
+
     def update_parameters(self, input_model):
         # Add performance of the currently evaluating input model to the population
         fitness = self.__evaluate_fitness(input_model)
         self.population.append((input_model, fitness))
-
-        # When an entire population has been evaluated we generate a new population
-        if not self.unevaluated_configurations:
-            self.__generate_new_population()
 
     @staticmethod
     def __evaluate_fitness(input_model):
         return input_model.accuracy + input_model.precision + input_model.recall
 
     def __generate_new_population(self):
+        # If there is no current population to generate a new population from we need to generate a new initial population
+        if not self.population:
+            self.initialize_controller(self.trivial_initialization)
+            return
         # Use tournament selection to decide which population to breed
         breeders = self.__tournament_selection()
 
@@ -86,7 +92,8 @@ class EvolutionaryController(controller.Controller):
                 if contestant[1] > best_tournament_fitness:
                     best_tournament_fitness = contestant[1]
                     best_contestant = contestant
-            winners.append(best_contestant)
+            if not best_contestant is None:
+                winners.append(best_contestant)
 
         return winners
 
