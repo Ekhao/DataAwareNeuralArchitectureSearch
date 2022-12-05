@@ -7,6 +7,7 @@ import randomcontroller
 import evolutionarycontroller
 
 import argparse
+import tensorflow as tf
 
 
 def main():
@@ -25,6 +26,19 @@ def main():
     argparser.add_argument(
         "-s", "--seed", help="A seed to be given to the random number generators of the program.", type=int, default=None)
     args = argparser.parse_args()
+
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            logical_gpus = tf.config.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(
+                logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
 
     print("Initializing search space...")
     constants.SEARCH_SPACE.initialize_search_space()

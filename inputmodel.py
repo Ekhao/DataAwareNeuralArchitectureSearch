@@ -58,6 +58,8 @@ class InputModel:
         model.compile(optimizer=model_optimizer,
                       loss=model_loss_function, metrics=model_metrics)
 
+        model.summary()
+
         return model
 
     def evaluate_input_model(self, num_epochs, batch_size):
