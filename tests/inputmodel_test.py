@@ -84,7 +84,9 @@ class InputModelTestCase(unittest.TestCase):
 
         model_size_without_training = input_model._InputModel__evaluate_model_size()
 
-        self.assertEqual(model_size_without_training, 16615324)
+        # The model size is not completely deterministic on seperate devices, so we apply an almost equal test.
+        self.assertAlmostEqual(
+            model_size_without_training, 16615324, places=-4)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
@@ -101,4 +103,5 @@ class InputModelTestCase(unittest.TestCase):
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10)
         model_size_without_training = input_model._InputModel__evaluate_model_size()
 
-        self.assertEqual(model_size_without_training, 21444220)
+        self.assertAlmostEqual(
+            model_size_without_training, 21444220, places=-4)
