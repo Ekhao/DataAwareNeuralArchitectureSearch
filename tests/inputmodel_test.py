@@ -72,27 +72,33 @@ class InputModelTestCase(unittest.TestCase):
         search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
             3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
-        dataset_loader = datasetloader.DatasetLoader("/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
-                                                     "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/", 90, 20, 1)
+        dataset_loader = unittest.mock.MagicMock()
+        dataset_loader.load_dataset = unittest.mock.Mock(
+            return_value=(None, None))
+        dataset_loader.supervised_dataset = unittest.mock.Mock(
+            return_value=[[tf.random.uniform((60, 79, 60, 60))]])
         input_model = inputmodel.InputModel()
 
         input_model.initialize_input_model(input_configuration=3, model_configuration=[10, 5, 3], search_space=search_space, dataset_loader=dataset_loader, frame_size=2048,
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10)
 
-        input_model.evaluate_input_model(5, 32)
+        model_size_without_training = input_model._InputModel__evaluate_model_size()
 
-        self.assertEqual(input_model.model_size, 37277488)
+        self.assertEqual(model_size_without_training, 16615324)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
             3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
-        dataset_loader = datasetloader.DatasetLoader("/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
-                                                     "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/", 90, 20, 1)
+        dataset_loader = unittest.mock.MagicMock()
+        dataset_loader.load_dataset = unittest.mock.Mock(
+            return_value=(None, None))
+        dataset_loader.supervised_dataset = unittest.mock.Mock(
+            return_value=[[tf.random.uniform((60, 79, 60, 60))]])
         input_model = inputmodel.InputModel()
 
         input_model.initialize_input_model(input_configuration=20, model_configuration=[1], search_space=search_space, dataset_loader=dataset_loader, frame_size=2048,
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10)
-        input_model.evaluate_input_model(5, 32)
+        model_size_without_training = input_model._InputModel__evaluate_model_size()
 
-        self.assertEqual(input_model.model_size, 41304)
+        self.assertEqual(model_size_without_training, 21444220)
