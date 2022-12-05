@@ -49,9 +49,9 @@ class DatasetLoader:
         anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
 
         normal_audio = Parallel(
-            n_jobs=-1)(delayed(librosa.resample)(audio, orig_sr=self.base_sr, target_sr=target_sr) for audio in normal_audio)
+            n_jobs=-1)(delayed(librosa.resample)(audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in normal_audio)
         anomalous_audio = Parallel(n_jobs=-1)(delayed(librosa.resample)
-                                              (audio, orig_sr=self.base_sr, target_sr=target_sr) for audio in anomalous_audio)
+                                              (audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in anomalous_audio)
 
         match preprocessing_type:
             case "waveform":
