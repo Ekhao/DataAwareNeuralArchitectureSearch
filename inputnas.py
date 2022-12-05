@@ -17,6 +17,10 @@ def main():
                            help="The filepath to the directory containing normal files. Can also be set in configuration.py.", default=None)
     argparser.add_argument("-a", "--path_anomalous_files",
                            help="The filepath to the directory containing anoamlous files. Can also be set in configuration.py.", default=None)
+    argparser.add_argument("-ns", "--path_noise_files",
+                           help="The filepath to the directory containing noise files. Can also be set in configuration.py.", default=None)
+    argparser.add_argument("-cns", "--case_noise_files",
+                           help="The case to load noise files from. Can also be set in configuration.py.", default="case1")
     argparser.add_argument(
         "-c", "--controller", help="The controller to use to direct the search. Also known as search strategy. Supported options are \"evolution\" and \"random\".", choices=["evolution", "random"], default="evolution")
     argparser.add_argument("-i", "--initialization",
@@ -48,8 +52,10 @@ def main():
         args.path_normal_files = constants.PATH_TO_NORMAL_FILES
     if args.path_anomalous_files == None:
         args.path_anomalous_files = constants.PATH_TO_ANOMALOUS_FILES
+    if args.path_noise_files == None:
+        args.path_noise_files = constants.PATH_TO_NOISE_FILES
 
-    dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_normal_files,
+    dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_normal_files, args.path_noise_files, "case1",
                                                  constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE)
 
     print("Initializing controller...")
