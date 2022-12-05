@@ -4,6 +4,7 @@ import searchspace
 import tensorflow as tf
 import sklearn.metrics
 import numpy as np
+import pathlib
 
 
 class InputModel:
@@ -78,6 +79,7 @@ class InputModel:
             y_true=y_test, y_pred=y_hat)
         self.recall = sklearn.metrics.recall_score(
             y_true=y_test, y_pred=y_hat)
+        self.model_size = self.__evaluate_model_size()
 
     def better_accuracy(self, other_configuration):
         return self.accuracy > other_configuration.accuracy
@@ -88,6 +90,21 @@ class InputModel:
     def better_recall(self, other_configuration):
         return self.recall > other_configuration.recall
 
+    def better_model_size(self, other_configuration):
+        return self.model_size < other_configuration.model_size
+
     def better_input_model(self, other_configuration):
         return np.any(np.array([self.better_accuracy(other_configuration), self.better_precision(
-            other_configuration), self.better_recall(other_configuration)]))
+            other_configuration), self.better_recall(other_configuration), self.better_model_size(other_configuration)]))
+
+    def __evaluate_model_size(self):
+        save_directory = pathlib.Path("./tmp/")
+        tf_model_file = save_directory/"tf_model"
+        tf.saved_model.save(self.model, tf_model_file)
+
+        converter = tf.lite.TFLiteConverter.from_saved_model(
+            tf_model_file.resolve().as_posix())
+        tflite_model = converter.convert()
+        tflite_model_file = save_directory/"tflite_model"
+        model_size = tflite_model_file.write_bytes(tflite_model)
+        return model_size

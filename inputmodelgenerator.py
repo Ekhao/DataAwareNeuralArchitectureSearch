@@ -31,7 +31,7 @@ class InputModelGenerator:
         pareto_optimal_models = []
         for model_number in range(num_of_models):
             # Print that we are now running a new sample
-            print("-" * os.get_terminal_size().columns)
+            print("-"*100)
             print(f"Starting model number {model_number}")
 
             # Get configuration from controller

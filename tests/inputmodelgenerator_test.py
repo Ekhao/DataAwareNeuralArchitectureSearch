@@ -17,12 +17,15 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model1.accuracy = 0.60
         input_model1.precision = 0.56
         input_model1.recall = 0.82
+        input_model1.model_size = 456356
         input_model2.accuracy = 0.61
         input_model2.precision = 0.4
         input_model2.recall = 0.99
+        input_model2.model_size = 358532
         input_model3.accuracy = 0.59
         input_model3.precision = 0.57
         input_model3.recall = 0.81
+        input_model3.model_size = 786565
 
         input_model_generator = inputmodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
@@ -32,6 +35,7 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model4.accuracy = 0.02
         input_model4.precision = 0.58
         input_model4.recall = 0.82
+        input_model4.model_size = 786565
         input_model_generator.save_pareto_optimal_models(
             input_model4, pareto_optimal_models)
         self.assertEqual(pareto_optimal_models, [
@@ -45,12 +49,17 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model1.accuracy = 0.60
         input_model1.precision = 0.56
         input_model1.recall = 0.82
+        input_model1.model_size = 456356
+
         input_model2.accuracy = 0.61
         input_model2.precision = 0.4
         input_model2.recall = 0.99
+        input_model2.model_size = 358532
+
         input_model3.accuracy = 0.59
         input_model3.precision = 0.57
         input_model3.recall = 0.81
+        input_model3.model_size = 786565
 
         input_model_generator = inputmodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
@@ -60,6 +69,7 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model4.accuracy = 0.02
         input_model4.precision = 0.55
         input_model4.recall = 0.82
+        input_model4.model_size = 786565
         input_model_generator.save_pareto_optimal_models(
             input_model4, pareto_optimal_models)
         self.assertEqual(pareto_optimal_models, [
