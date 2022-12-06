@@ -18,7 +18,7 @@ class InputModelTestCase(unittest.TestCase):
         # To keep these tests separate from the dataset we use a mock object as the dataset loader.
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
-            return_value=(None, None))
+            return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
         input_model = inputmodel.InputModel()
@@ -74,7 +74,7 @@ class InputModelTestCase(unittest.TestCase):
         search_space.initialize_search_space()
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
-            return_value=(None, None))
+            return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
         input_model = inputmodel.InputModel()
@@ -94,7 +94,7 @@ class InputModelTestCase(unittest.TestCase):
         search_space.initialize_search_space()
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
-            return_value=(None, None))
+            return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
         input_model = inputmodel.InputModel()
