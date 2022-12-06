@@ -70,7 +70,17 @@ def main():
 
     input_model_generator = inputmodelgenerator.InputModelGenerator(
         constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader)
-    input_model_generator.run_input_nas(num_of_models=args.num_models)
+    pareto_front = input_model_generator.run_input_nas(
+        num_of_models=args.num_models)
+
+    print("Models on pareto front: ")
+    for input_model in pareto_front:
+        print(constants.SEARCH_SPACE.input_decode(
+            input_model.input_configuration))
+        print(constants.SEARCH_SPACE.model_decode(
+            input_model.model_configuration))
+        print(f"Accuracy: {input_model.accuracy}, Precision: {input_model.precision}, Recall: {input_model.recall}, Model Size (in bytes): {input_model.model_size}.")
+        print("-"*200)
 
 
 if __name__ == "__main__":

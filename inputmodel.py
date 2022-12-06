@@ -13,6 +13,9 @@ class InputModel:
 
     # A "secondary" constructor to allow the creation of an InputModelClass for access to methods without loading datasets a creating neural network models.
     def initialize_input_model(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> None:
+        self.input_configuration = input_configuration
+        self.model_configuration = model_configuration
+
         self.input = self.create_input(
             input_configuration=input_configuration, search_space=search_space, dataset_loader=dataset_loader, frame_size=frame_size, hop_length=hop_length, num_mel_banks=num_mel_banks, num_mfccs=num_mfccs)
         # We need to subscript the dataset two times.
@@ -24,10 +27,14 @@ class InputModel:
     def create_input(self, input_configuration: int, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs) -> tuple:
         input_config = search_space.input_decode(input_configuration)
 
-        normal_preprocessed, abnormal_preprocessed = dataset_loader.load_dataset(
+        normal_preprocessed, anomalous_preprocessed = dataset_loader.load_dataset(
             input_config[0], input_config[1], frame_size=frame_size, hop_length=hop_length, num_mel_banks=num_mel_banks, num_mfccs=num_mfccs)
 
-        return dataset_loader.supervised_dataset(normal_preprocessed, abnormal_preprocessed)
+        # Setting amount of normal and anomalous samples for weighing the model
+        self.num_normal_samples = len(normal_preprocessed)
+        self.num_anomalous_samples = len(anomalous_preprocessed)
+
+        return dataset_loader.supervised_dataset(normal_preprocessed, anomalous_preprocessed)
 
     def create_model(self, model_configuration: list[int], search_space, input_shape: tuple, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> tf.keras.Model:
         layer_configs = search_space.model_decode(model_configuration)
@@ -66,8 +73,14 @@ class InputModel:
         # Maybe introduce validation data to stop training if the validation error starts increasing.
         X_train, X_test, y_train, y_test = self.input
 
+        total_samples = self.num_normal_samples + self.num_anomalous_samples
+        weight_for_0 = (1 / self.num_normal_samples) * (total_samples / 2.0)
+        weight_for_1 = (1 / self.num_anomalous_samples) * (total_samples / 2.0)
+
+        class_weight = {0: weight_for_0, 1: weight_for_1}
+
         self.model.fit(x=X_train, y=y_train, epochs=num_epochs,
-                       batch_size=batch_size)
+                       batch_size=batch_size, class_weight=class_weight)
 
         y_hat = self.model.predict(X_test, batch_size=batch_size)
 
@@ -98,6 +111,11 @@ class InputModel:
     def better_input_model(self, other_configuration):
         return np.any(np.array([self.better_accuracy(other_configuration), self.better_precision(
             other_configuration), self.better_recall(other_configuration), self.better_model_size(other_configuration)]))
+
+    def free_input_model(self):
+        del self.input
+        del self.model
+        return
 
     def __evaluate_model_size(self):
         save_directory = pathlib.Path("./tmp/")
