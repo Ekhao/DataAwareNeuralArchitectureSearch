@@ -21,6 +21,8 @@ CASE_NOISE_FILES = "case1"
 NUMBER_OF_NORMAL_FILES_TO_USE = 900
 NUMBER_OF_ANOMALOUS_FILES_TO_USE = 200
 DATASET_CHANNEL_TO_USE = 1
+SOUND_GAIN = 10**(0/20)
+NOISE_GAIN = 10**(0/20)
 
 # Audio preprocessing parameters
 FRAME_SIZE = 2048  # Traditional values
@@ -33,7 +35,7 @@ MAX_NUM_LAYERS = 5
 
 # Evaluation parameters
 OPTIMIZER = tf.keras.optimizers.Adam()
-NUM_EPOCHS = 10
+NUM_EPOCHS = 30
 BATCH_SIZE = 32
 
 # Evolutionary parameters

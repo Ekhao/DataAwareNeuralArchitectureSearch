@@ -45,12 +45,10 @@ class DatasetLoader:
         base_noise_audio = base_noise_audio * math.ceil(num_duplicates)
 
         # Mix noise into the other audio files.
-        # Sound and Noise gain is the same as used in: https://github.com/YumaKoizumi/ToyADMOS-dataset/
-        # Maybe ask fontas about this.
         normal_noise_audio = base_noise_audio[:num_normal_files]
         anomalous_noise_audio = base_noise_audio[num_normal_files:]
-        sound_gain = 10**(0/20)
-        noise_gain = 10**(10/20)
+        sound_gain = constants.SOUND_GAIN
+        noise_gain = constants.NOISE_GAIN
         normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
         anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)
         self.base_normal_audio = Parallel(
