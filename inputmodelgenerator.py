@@ -95,5 +95,4 @@ class InputModelGenerator:
                 is_optimal[is_optimal] = np.array([x.better_input_model(
                     model) for x in iterative_pareto_optimal_models[is_optimal]])
                 is_optimal[i] = True
-        return_list = list(iterative_pareto_optimal_models[is_optimal])
-        return return_list
+        return list(iterative_pareto_optimal_models[is_optimal])
