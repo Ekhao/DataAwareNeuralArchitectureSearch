@@ -33,11 +33,11 @@ class DatasetLoader:
 
         # Load the audio files using librosa. Use multiple python processes in order to speed up loading.
         base_normal_audio = Parallel(
-            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in normal_files)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in normal_files)
         base_anomalous_audio = Parallel(
-            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in anomalous_files)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in anomalous_files)
         base_noise_audio = Parallel(
-            n_jobs=-1)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in noise_files)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in noise_files)
 
         # Make sure that base_noise_audio is at least the length of the sum of the two others:
         num_duplicates = (len(base_normal_audio) +
@@ -52,9 +52,9 @@ class DatasetLoader:
         normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
         anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)
         self.base_normal_audio = Parallel(
-            n_jobs=-1)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in normal_noise_zip)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in normal_noise_zip)
         self.base_anomalous_audio = Parallel(
-            n_jobs=-1)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in anomalous_noise_zip)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in anomalous_noise_zip)
 
     def supervised_dataset(self, normal_preprocessed, anomalous_preprocessed, test_size=0.2):
         normal_y = tf.zeros(len(normal_preprocessed))
@@ -75,9 +75,9 @@ class DatasetLoader:
         anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
 
         normal_audio = Parallel(
-            n_jobs=-1)(delayed(librosa.resample)(audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in normal_audio)
-        anomalous_audio = Parallel(n_jobs=-1)(delayed(librosa.resample)
-                                              (audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in anomalous_audio)
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(librosa.resample)(audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in normal_audio)
+        anomalous_audio = Parallel(n_jobs=constants.NUM_CORES_TO_USE)(delayed(librosa.resample)
+                                                                      (audio, orig_sr=self.base_sr, target_sr=target_sr, res_type="kaiser_fast") for audio in anomalous_audio)
 
         match preprocessing_type:
             case "waveform":
@@ -87,21 +87,21 @@ class DatasetLoader:
                 return (normal_audio, anomalous_audio)
             case "spectrogram":
                 normal_spectogram = Parallel(
-                    n_jobs=-1)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in normal_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in normal_audio)
                 anomalous_spectrograms = Parallel(
-                    n_jobs=-1)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in anomalous_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_spectrogram)(audio, frame_size, hop_length) for audio in anomalous_audio)
                 return (normal_spectogram, anomalous_spectrograms)
             case "mel-spectrogram":
                 normal_mel_spectogram = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in normal_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in normal_audio)
                 anomalous_mel_spectrograms = Parallel(
-                    n_jobs=-1)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in anomalous_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_mel_spectrogram)(audio, target_sr, frame_size, hop_length, num_mel_banks) for audio in anomalous_audio)
                 return (normal_mel_spectogram, anomalous_mel_spectrograms)
             case "mfcc":
                 normal_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in normal_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in normal_audio)
                 anomalous_mfccs = Parallel(
-                    n_jobs=-1)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in anomalous_audio)
+                    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.create_mfcc)(audio, target_sr, frame_size, hop_length, num_mel_banks, num_mfccs) for audio in anomalous_audio)
                 return (normal_mfccs, anomalous_mfccs)
             case _:
                 raise NotImplementedError(

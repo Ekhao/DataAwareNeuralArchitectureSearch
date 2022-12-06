@@ -1,6 +1,9 @@
 import tensorflow as tf
 import searchspace
 
+# Joblib Parameters
+NUM_CORES_TO_USE = -1
+
 # Search space parameters:
 # Model Layer: Amount of filters, filter size, and activation function
 # Input: Sample rate and preprocessing type
@@ -35,7 +38,7 @@ MAX_NUM_LAYERS = 5
 
 # Evaluation parameters
 OPTIMIZER = tf.keras.optimizers.Adam()
-NUM_EPOCHS = 30
+NUM_EPOCHS = 100
 BATCH_SIZE = 32
 
 # Evolutionary parameters
