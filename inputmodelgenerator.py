@@ -1,5 +1,4 @@
-import tensorflow as tf
-import os
+import numpy as np
 
 import inputmodel
 import datasetloader
@@ -55,17 +54,22 @@ class InputModelGenerator:
             input_model.evaluate_input_model(self.num_epochs, self.batch_size)
 
             print(
-                f"Model{model_number} metrics:\nAccuracy: {input_model.accuracy}\nPrecision: {input_model.precision}\nRecall: {input_model.recall}")
+                f"Model{model_number} metrics:\nAccuracy: {input_model.accuracy}\nPrecision: {input_model.precision}\nRecall: {input_model.recall}\nModel Size (bytes): {input_model.model_size}")
 
             print("Updating parameters of the controller...")
             # Update controller parameters
             self.controller.update_parameters(input_model)
+
+            print("Freeing loaded data and model to reduce memory consumption...")
+            input_model.free_input_model()
 
             print("Checking if model is on the pareto front...")
             # Save the models that are pareto optimal
             pareto_optimal_models = self.save_pareto_optimal_models(
                 input_model, pareto_optimal_models)
 
+        pareto_optimal_models = self.__prune_non_pareto_optimal_models(
+            pareto_optimal_models)
         return pareto_optimal_models
 
     def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
@@ -78,3 +82,17 @@ class InputModelGenerator:
         if not dominated:
             new_list.append(current_input_model)
         return new_list
+
+    # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+
+    def __prune_non_pareto_optimal_models(self, iterative_pareto_optimal_models):
+        iterative_pareto_optimal_models = np.array(
+            iterative_pareto_optimal_models)
+        is_optimal = np.ones(
+            iterative_pareto_optimal_models.shape[0], dtype=bool)
+        for i, model in enumerate(iterative_pareto_optimal_models):
+            if is_optimal[i]:
+                is_optimal[is_optimal] = np.array([x.better_input_model(
+                    model) for x in iterative_pareto_optimal_models[is_optimal]])
+                is_optimal[i] = True
+        return list(iterative_pareto_optimal_models[is_optimal])
