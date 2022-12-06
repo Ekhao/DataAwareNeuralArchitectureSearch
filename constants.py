@@ -38,7 +38,7 @@ MAX_NUM_LAYERS = 5
 
 # Evaluation parameters
 OPTIMIZER = tf.keras.optimizers.Adam()
-NUM_EPOCHS = 30
+NUM_EPOCHS = 100
 BATCH_SIZE = 32
 
 # Evolutionary parameters
