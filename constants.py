@@ -2,7 +2,7 @@ import tensorflow as tf
 import searchspace
 
 # Joblib Parameters
-NUM_CORES_TO_USE = 6
+NUM_CORES_TO_USE = -1
 
 # Search space parameters:
 # Model Layer: Amount of filters, filter size, and activation function
