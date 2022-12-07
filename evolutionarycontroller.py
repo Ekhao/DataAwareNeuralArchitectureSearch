@@ -9,7 +9,7 @@ import numpy as np
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, search_space, seed=None, population_size=constants.POPULATION_SIZE, max_num_layers=constants.MAX_NUM_LAYERS, crossover_ratio=constants.CROSSOVER_RATIO, tournament_amount=constants.TOURNAMENT_AMOUNT) -> None:
+    def __init__(self, search_space, seed=None, population_size=constants.POPULATION_SIZE, max_num_layers=constants.MAX_NUM_LAYERS, crossover_ratio=constants.CROSSOVER_RATIO, tournament_amount=constants.POPULATION_UPDATE_RATIO) -> None:
         super().__init__(search_space)
         random.seed(seed)
         self.currently_evaluating = None
@@ -18,7 +18,8 @@ class EvolutionaryController(controller.Controller):
         self.population_size = population_size
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
-        self.tournament_size = tournament_amount
+        self.tournament_amount = max(
+            1, round(population_size * tournament_amount))
 
     def initialize_controller(self, trivial_initialization=True):
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
@@ -43,7 +44,7 @@ class EvolutionaryController(controller.Controller):
     def generate_configuration(self):
         # When an entire population has been evaluated we generate a new population
         if not self.unevaluated_configurations:
-            self.__generate_new_population()
+            self.__generate_new_unevaluated_configurations()
 
         return self.unevaluated_configurations.pop(0)
 
@@ -59,30 +60,35 @@ class EvolutionaryController(controller.Controller):
     def __evaluate_fitness(input_model):
         return input_model.accuracy + input_model.precision + input_model.recall
 
-    def __generate_new_population(self):
-        # If there is no current population to generate a new population from we need to generate a new initial population
+    def __generate_new_unevaluated_configurations(self):
+        # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
         if not self.population:
             self.initialize_controller(self.trivial_initialization)
             return
         # Use tournament selection to decide which population to breed
         breeders = self.__tournament_selection()
 
-        amount_of_new_individuals = self.population_size - len(breeders)
-        amount_of_mutations = round(amount_of_new_individuals /
+        # After this we would like breeders to be configurations instead of a tuple of a InputModel and a fitness
+        breeder_configurations = self.__get_breeder_configurations(breeders)
+
+        amount_of_new_individuals = self.population_size - \
+            len(breeder_configurations)
+        amount_of_mutations = round(amount_of_new_individuals *
                                     (1 - self.crossover_ratio))
         amount_of_crossovers = round(
-            amount_of_new_individuals / self.crossover_ratio)
+            amount_of_new_individuals * self.crossover_ratio)
 
         new_mutations = self.__create_mutations(
-            individuals=breeders, amount=amount_of_mutations)
+            configurations_to_mutate=breeder_configurations, amount=amount_of_mutations)
         new_crossovers = self.__create_crossovers(
-            breeders=breeders, amount=amount_of_crossovers)
+            configurations_to_crossover=breeder_configurations, amount=amount_of_crossovers)
 
-        # self.population.clear()
-        self.population = breeders + new_mutations + new_crossovers
+        self.population.clear()
+        self.population.extend(breeders)
+        self.unevaluated_configurations = new_mutations + new_crossovers
 
     def __tournament_selection(self):
-        tournaments = np.array_split(self.population, self.tournament_size)
+        tournaments = np.array_split(self.population, self.tournament_amount)
 
         winners = []
         for tournament in tournaments:
@@ -93,71 +99,85 @@ class EvolutionaryController(controller.Controller):
                     best_tournament_fitness = contestant[1]
                     best_contestant = contestant
             if not best_contestant is None:
-                winners.append(best_contestant)
+                winners.append(list(best_contestant))
 
         return winners
 
-    def __create_mutations(self, individuals, amount):
+    # This function takes a list of tuples of InputModels and their fitness.
+    # It should return the configurations that generated those input models to create mutations and crossovers of them
+    def __get_breeder_configurations(self, breeders):
+        return [[breeder[0].input_configuration,
+                 breeder[0].model_configuration] for breeder in breeders]
+
+    def __create_mutations(self, configurations_to_mutate, amount):
         # Generate a random number to choose which mutation to use:
         mutations = []
         for i in range(amount):
-            random_mutation_number = random.random()
-            random_individual = individuals[random.randrange(len(individuals))]
+            configuration_to_mutate = configurations_to_mutate[i % amount]
+            mutation = configuration_to_mutate
 
-            match random_mutation_number:
-                case x if 0 <= x < 0.1:
-                    mutation = self.__new_convolutional_layer_mutation(
-                        random_individual)
-                case x if 0.1 <= x < 0.2:
-                    mutation = self.__remove_convolutional_layer_mutation(
-                        random_individual)
-                case x if 0.2 <= x < 0.3:
-                    mutation = self.__increase_filter_size_mutation(
-                        random_individual)
-                case x if 0.3 <= x < 0.4:
-                    mutation = self.__decrease_filter_size_mutation(
-                        random_individual)
-                case x if 0.4 <= x < 0.5:
-                    mutation = self.__increase_number_of_filters_mutation(
-                        random_individual)
-                case x if 0.5 <= x < 0.6:
-                    mutation = self.__decrease_number_of_filters_mutation(
-                        random_individual)
-                case x if 0.6 <= x < 0.7:
-                    mutation = self.__change_activation_function_mutation(
-                        random_individual)
-                case x if 0.7 <= x < 0.8:
-                    mutation = self.__increase_sample_rate_mutation(
-                        random_individual)
-                case x if 0.8 <= x < 0.9:
-                    mutation = self.__decrease_sample_rate_mutation(
-                        random_individual)
-                case x if 0.9 <= x < 1:
-                    mutation = self.__change_preprocessing_mutation()
+            # Sometimes a mutation does nothing, so continue until a change is made.
+            # A mutation may be doing nothing if it is randomly chosen to decrease a value that is already at its minimum
+            while mutation == configuration_to_mutate:
+                random_mutation_number = random.random()
+                match random_mutation_number:
+                    case x if 0 <= x < 0.1:
+                        mutation = self.__new_convolutional_layer_mutation(
+                            configuration_to_mutate)
+                    case x if 0.1 <= x < 0.2:
+                        mutation = self.__remove_convolutional_layer_mutation(
+                            configuration_to_mutate)
+                    case x if 0.2 <= x < 0.3:
+                        mutation = self.__increase_filter_size_mutation(
+                            configuration_to_mutate)
+                    case x if 0.3 <= x < 0.4:
+                        mutation = self.__decrease_filter_size_mutation(
+                            configuration_to_mutate)
+                    case x if 0.4 <= x < 0.5:
+                        mutation = self.__increase_number_of_filters_mutation(
+                            configuration_to_mutate)
+                    case x if 0.5 <= x < 0.6:
+                        mutation = self.__decrease_number_of_filters_mutation(
+                            configuration_to_mutate)
+                    case x if 0.6 <= x < 0.7:
+                        mutation = self.__change_activation_function_mutation(
+                            configuration_to_mutate)
+                    case x if 0.7 <= x < 0.8:
+                        mutation = self.__increase_sample_rate_mutation(
+                            configuration_to_mutate)
+                    case x if 0.8 <= x < 0.9:
+                        mutation = self.__decrease_sample_rate_mutation(
+                            configuration_to_mutate)
+                    case x if 0.9 <= x < 1:
+                        mutation = self.__change_preprocessing_mutation(
+                            configuration_to_mutate)
             mutations.append(mutation)
 
         return mutations
     # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
 
     def __new_convolutional_layer_mutation(self, configuration):
+        mutation = copy.deepcopy(configuration)
         new_conv_layer = random.randrange(
             0, len(self.search_space.model_layer_search_space_enumerated))
-        assert type(configuration[1]) == list
-        configuration[1].append(new_conv_layer)
-        return configuration
+        assert type(mutation[1]) == list
+        mutation[1].append(new_conv_layer)
+        return mutation
 
     # Remove the last convolutional layer of the model
     def __remove_convolutional_layer_mutation(self, configuration):
-        assert type(configuration[1]) == list
-        configuration[1].pop()
-        return configuration
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1]) == list
+        mutation[1].pop()
+        return mutation
 
     # Increase the filter size of a random convolutional layer
     def __increase_filter_size_mutation(self, configuration):
-        assert type(configuration[1] == list)
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1] == list)
         random_conv_layer_number = self.__random_conv_layer_number(
-            configuration)
-        layer_to_modify = configuration[1][random_conv_layer_number]
+            mutation)
+        layer_to_modify = mutation[1][random_conv_layer_number]
 
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
@@ -179,15 +199,16 @@ class EvolutionaryController(controller.Controller):
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
-        configuration[1][random_conv_layer_number] = new_layer
+        mutation[1][random_conv_layer_number] = new_layer
 
-        return configuration
+        return mutation
 
     def __decrease_filter_size_mutation(self, configuration):
-        assert type(configuration[1] == list)
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1] == list)
         random_conv_layer_number = self.__random_conv_layer_number(
-            configuration)
-        layer_to_modify = configuration[1][random_conv_layer_number]
+            mutation)
+        layer_to_modify = mutation[1][random_conv_layer_number]
 
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
@@ -208,15 +229,16 @@ class EvolutionaryController(controller.Controller):
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
-        configuration[1][random_conv_layer_number] = new_layer
+        mutation[1][random_conv_layer_number] = new_layer
 
-        return configuration
+        return mutation
 
     def __increase_number_of_filters_mutation(self, configuration):
-        assert type(configuration[1] == list)
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1] == list)
         random_conv_layer_number = self.__random_conv_layer_number(
-            configuration)
-        layer_to_modify = configuration[1][random_conv_layer_number]
+            mutation)
+        layer_to_modify = mutation[1][random_conv_layer_number]
 
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
@@ -237,15 +259,16 @@ class EvolutionaryController(controller.Controller):
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
-        configuration[1][random_conv_layer_number] = new_layer
+        mutation[1][random_conv_layer_number] = new_layer
 
-        return configuration
+        return mutation
 
     def __decrease_number_of_filters_mutation(self, configuration):
-        assert type(configuration[1] == list)
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1] == list)
         random_conv_layer_number = self.__random_conv_layer_number(
-            configuration)
-        layer_to_modify = configuration[1][random_conv_layer_number]
+            mutation)
+        layer_to_modify = mutation[1][random_conv_layer_number]
 
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
@@ -267,15 +290,16 @@ class EvolutionaryController(controller.Controller):
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
-        configuration[1][random_conv_layer_number] = new_layer
+        mutation[1][random_conv_layer_number] = new_layer
 
-        return configuration
+        return mutation
 
     def __change_activation_function_mutation(self, configuration):
-        assert type(configuration[1] == list)
+        mutation = copy.deepcopy(configuration)
+        assert type(mutation[1] == list)
         random_conv_layer_number = self.__random_conv_layer_number(
-            configuration)
-        layer_to_modify = configuration[1][random_conv_layer_number]
+            mutation)
+        layer_to_modify = mutation[1][random_conv_layer_number]
 
         # Decode layer
         decoded_layer = self.search_space.model_layer_decode(layer_to_modify)
@@ -294,9 +318,9 @@ class EvolutionaryController(controller.Controller):
         new_layer = self.search_space.model_layer_encode(decoded_layer)
 
         # Add the layer to the configuration again
-        configuration[1][random_conv_layer_number] = new_layer
+        mutation[1][random_conv_layer_number] = new_layer
 
-        return configuration
+        return mutation
 
     def __increase_sample_rate_mutation(self, configuration):
         # Decode input configuration
@@ -369,10 +393,10 @@ class EvolutionaryController(controller.Controller):
     def __random_conv_layer_number(self, configuration):
         return random.randrange(0, len(configuration[1]))
 
-    def __create_crossovers(self, breeders, amount):
+    def __create_crossovers(self, configurations_to_crossover, amount):
         crossovers = []
         for i in range(amount):
-            random_parents = random.choices(breeders, k=2)
+            random_parents = random.choices(configurations_to_crossover, k=2)
             crossovers.append(self.__crossover(*random_parents))
 
         return crossovers

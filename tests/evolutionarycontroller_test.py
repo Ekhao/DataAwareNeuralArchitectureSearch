@@ -77,18 +77,105 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
             input_model)
         self.assertEqual(fitness, 1.5)
 
+    def test_generate_new_unevaluated_population(self):
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=32, population_size=5)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        input_model.input_configuration = 8
+        input_model.model_configuration = [20, 5, 13]
+        evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
+                                              for i in range(5)]
+
+        # Before generating a new list of unevaluated configurations the unevaluated configurations is empty
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [])
+
+        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+
+        self.assertEqual(
+            evolutionary_controller.population[0][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[1][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[0][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.population[1][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [(5, [20, 5, 13]), [8, [20, 5]], (8, [20, 5, 13])])
+
+    def test_generate_new_unevaluated_population_other_seed2(self):
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=40, population_size=5)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        input_model.input_configuration = 8
+        input_model.model_configuration = [20, 5, 13]
+        evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
+                                              for i in range(5)]
+
+        # Before generating a new list of unevaluated configurations the unevaluated configurations is empty
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [])
+
+        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+
+        self.assertEqual(
+            evolutionary_controller.population[0][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[1][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[0][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.population[1][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [[8, [21, 5, 13]], [8, [20, 5, 15]], (8, [20, 5, 13])])
+
+    def test_generate_new_unevaluated_population_other_seed3(self):
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=55, population_size=5)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        input_model.input_configuration = 8
+        input_model.model_configuration = [20, 5, 13]
+        evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
+                                              for i in range(5)]
+
+        # Before generating a new list of unevaluated configurations the unevaluated configurations is empty
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [])
+
+        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+
+        self.assertEqual(
+            evolutionary_controller.population[0][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[1][0].input_configuration, 8)
+        self.assertEqual(
+            evolutionary_controller.population[0][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.population[1][0].model_configuration, [20, 5, 13])
+        self.assertEqual(
+            evolutionary_controller.unevaluated_configurations, [(5, [20, 5, 13]), (7, [20, 5, 13]), (8, [20, 5, 13])])
+
     def test_tournament_selection(self):
         random.seed(23)
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
                                                48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
-            search_space=search_space, seed=32, population_size=2)
+            search_space=search_space, seed=32, population_size=20)
         input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
         evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
-                                              for i in range(10)]
+                                              for i in range(20)]
         winners = evolutionary_controller._EvolutionaryController__tournament_selection()
-        self.assertEqual(len(winners), 5)
+        self.assertEqual(len(winners), 10)
 
     def test_tournament_selection_low_population(self):
         random.seed(23)
@@ -115,9 +202,28 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         winners = evolutionary_controller._EvolutionaryController__tournament_selection()
         self.assertEqual(len(winners), 0)
 
-    def test_new_convolutional_layer_mutation(self):
+    def test_get_breeder_configurations(self):
+        random.seed(23)
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
                                                48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space.initialize_search_space()
+        evolutionary_controller = evolutionarycontroller.EvolutionaryController(
+            search_space=search_space, seed=32, population_size=2)
+        input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
+        input_model.input_configuration = 6
+        input_model.model_configuration = [10, 7, 14]
+        breeders = [(copy.deepcopy(input_model), random.uniform(0, 3))
+                    for i in range(10)]
+
+        breeder_configurations = evolutionary_controller._EvolutionaryController__get_breeder_configurations(
+            breeders)
+
+        self.assertEqual(breeder_configurations.pop()[0], 6)
+        self.assertEqual(breeder_configurations.pop()[1], [10, 7, 14])
+
+    def test_new_convolutional_layer_mutation(self):
+        search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -139,7 +245,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_remove_convolutional_layer_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -161,7 +267,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_increase_number_of_filters_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -183,7 +289,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_decrease_number_of_filters_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -205,7 +311,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_increase_filter_size_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -228,7 +334,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
     # This is not chaning anything as the decreased filter size is already at the minimum. Maybe this should be an error.
     def test_decrease_filter_size_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -250,7 +356,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_change_activation_function_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32,  population_size=2)
@@ -272,7 +378,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_increase_sample_rate_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -294,7 +400,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_decrease_sample_rate_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -316,7 +422,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_decrease_sample_rate_mutation_already_minimum(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -338,7 +444,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_change_preprocessing_type_mutation(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
@@ -360,7 +466,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_change_preprocessing_type_mutation_other_seed(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=51, population_size=2)
@@ -382,7 +488,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_crossover(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=70, population_size=2)
@@ -413,7 +519,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
     def test_crossover_different_length(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([
-                                               48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+            48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=14, population_size=2)
