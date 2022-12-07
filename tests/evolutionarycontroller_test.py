@@ -170,12 +170,12 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
                                                48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
-            search_space=search_space, seed=32, population_size=2)
+            search_space=search_space, seed=32, population_size=20)
         input_model = unittest.mock.MagicMock(spec="inputmodel.InputModel")
         evolutionary_controller.population = [(copy.deepcopy(input_model), random.uniform(0, 3))
-                                              for i in range(10)]
+                                              for i in range(20)]
         winners = evolutionary_controller._EvolutionaryController__tournament_selection()
-        self.assertEqual(len(winners), 5)
+        self.assertEqual(len(winners), 10)
 
     def test_tournament_selection_low_population(self):
         random.seed(23)
