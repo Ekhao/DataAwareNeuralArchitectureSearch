@@ -161,14 +161,16 @@ class EvolutionaryController(controller.Controller):
         new_conv_layer = random.randrange(
             0, len(self.search_space.model_layer_search_space_enumerated))
         assert type(mutation[1]) == list
-        mutation[1].append(new_conv_layer)
+        if len(mutation[1]) < self.max_num_layers:
+            mutation[1].append(new_conv_layer)
         return mutation
 
     # Remove the last convolutional layer of the model
     def __remove_convolutional_layer_mutation(self, configuration):
         mutation = copy.deepcopy(configuration)
         assert type(mutation[1]) == list
-        mutation[1].pop()
+        if len(mutation[1]) > 1:
+            mutation[1].pop()
         return mutation
 
     # Increase the filter size of a random convolutional layer
