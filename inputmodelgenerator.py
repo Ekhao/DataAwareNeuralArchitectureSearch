@@ -37,6 +37,9 @@ class InputModelGenerator:
             print("Generating model configuration...")
             input_configuration, model_configuration = self.controller.generate_configuration()
 
+            print(
+                f"Input configuration: {self.search_space.input_decode(input_configuration)}\nModel configuration: {self.search_space.model_decode(model_configuration)}")
+
             print("Creating input and model from configuration...")
             # Create input and model from configuration
             input_model = inputmodel.InputModel()

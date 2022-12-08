@@ -52,7 +52,7 @@ class InputModel:
         except ValueError:
             return None
 
-        # The standard convolutional model has dense layers at its end for classification - let us make the same assumption TODO: should be a part of search space
+        # The standard convolutional model has dense layers at its end for classification - let us make the same assumption
         model.add(tf.keras.layers.Flatten())
 
         model.add(tf.keras.layers.Dense(

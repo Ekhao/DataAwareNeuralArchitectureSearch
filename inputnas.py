@@ -55,7 +55,7 @@ def main():
     if args.path_noise_files == None:
         args.path_noise_files = constants.PATH_TO_NOISE_FILES
 
-    dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_normal_files, args.path_noise_files, "case1",
+    dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_anomalous_files, args.path_noise_files, "case1",
                                                  constants.NUMBER_OF_NORMAL_FILES_TO_USE, constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, constants.DATASET_CHANNEL_TO_USE)
 
     print("Initializing controller...")
