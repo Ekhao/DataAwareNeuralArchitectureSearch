@@ -1,4 +1,7 @@
 import numpy as np
+import csv
+import datetime
+
 
 import inputmodel
 import datasetloader
@@ -28,6 +31,11 @@ class InputModelGenerator:
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
+        csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
+        with open(csv_log_name, "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["Model Number", "Input Configuration",
+                            "Model Configuration", "Accuracy", "Precision", "Recall", "Model Size"])
         for model_number in range(num_of_models):
             # Print that we are now running a new sample
             print("-"*100)
@@ -66,6 +74,9 @@ class InputModelGenerator:
             print("Freeing loaded data and model to reduce memory consumption...")
             input_model.free_input_model()
 
+            print("Saving InputModel and metrics in logs...")
+            self.__save_to_csv(csv_log_name, model_number, input_model)
+
             print("Checking if model is on the pareto front...")
             # Save the models that are pareto optimal
             pareto_optimal_models = self.save_pareto_optimal_models(
@@ -74,6 +85,12 @@ class InputModelGenerator:
         pareto_optimal_models = self.__prune_non_pareto_optimal_models(
             pareto_optimal_models)
         return pareto_optimal_models
+
+    def __save_to_csv(self, csv_log_name, model_number, input_model):
+        with open(csv_log_name, "a", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([model_number, self.search_space.input_decode(
+                input_model.input_configuration), self.search_space.model_decode(input_model.model_configuration), input_model.accuracy, input_model.precision, input_model.recall, input_model.model_size])
 
     def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
         new_list = pareto_optimal_models
