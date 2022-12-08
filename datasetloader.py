@@ -19,42 +19,43 @@ class DatasetLoader:
             f"{path_normal_files}*ch{channel}*.wav")
         anomalous_files = tf.io.gfile.glob(
             f"{path_anomalous_files}*ch{channel}*.wav")
-        # noise_files = tf.io.gfile.glob(
-        #    f"{path_noise_files}*{case_noise_files}*ch{channel}*.wav")
+        noise_files = tf.io.gfile.glob(
+            f"{path_noise_files}*{case_noise_files}*ch{channel}*.wav")
 
         # Cut the amount of processed files according to the program parameters
         normal_files = normal_files[:num_normal_files]
         anomalous_files = anomalous_files[:num_anomalous_files]
         # We should have as many noise files as the sum of normal and anomalous files
-        # noise_files = noise_files[:num_normal_files+num_anomalous_files]
+        noise_files = noise_files[:num_normal_files+num_anomalous_files]
 
         # Get the sample rate of the audio files. The sample rate is assumed to be the same for every file.
         self.base_sr = librosa.get_samplerate(normal_files[0])
 
         # Load the audio files using librosa. Use multiple python processes in order to speed up loading.
-        self.base_normal_audio = Parallel(
+        base_normal_audio = Parallel(
             n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in normal_files)
-        self.base_anomalous_audio = Parallel(
+        base_anomalous_audio = Parallel(
             n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in anomalous_files)
-        # base_noise_audio = Parallel(
-        #    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in noise_files)
+        base_noise_audio = Parallel(
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.librosa_load_without_sample_rate)(file, sr=self.base_sr) for file in noise_files)
 
         # Make sure that base_noise_audio is at least the length of the sum of the two others:
-        # num_duplicates = (len(base_normal_audio) +
-        #                  len(base_anomalous_audio)) / len(base_noise_audio)
-        # base_noise_audio = base_noise_audio * math.ceil(num_duplicates)
+        num_duplicates = (len(base_normal_audio) +
+                          len(base_anomalous_audio)) / len(base_noise_audio)
+        base_noise_audio = base_noise_audio * math.ceil(num_duplicates)
 
         # Mix noise into the other audio files.
-        # normal_noise_audio = base_noise_audio[:num_normal_files]
-        # anomalous_noise_audio = base_noise_audio[num_normal_files:]
-        # sound_gain = constants.SOUND_GAIN
-        # noise_gain = constants.NOISE_GAIN
-        # normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
-        # anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)
-        # self.base_normal_audio = Parallel(
-        #    n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in #normal_noise_zip)
-        # self.base_anomalous_audio = Parallel(
-        #    n_jobs = constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in anomalous_noise_zip)
+        normal_noise_audio = base_noise_audio[:num_normal_files]
+        anomalous_noise_audio = base_noise_audio[num_normal_files:]
+        sound_gain = constants.SOUND_GAIN
+        noise_gain = constants.NOISE_GAIN
+        normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
+        anomalous_noise_zip = zip(
+            base_anomalous_audio, anomalous_noise_audio)
+        self.base_normal_audio = Parallel(
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in normal_noise_zip)
+        self.base_anomalous_audio = Parallel(
+            n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in anomalous_noise_zip)
 
     def supervised_dataset(self, normal_preprocessed, anomalous_preprocessed, test_size=0.2):
         normal_y = tf.zeros(len(normal_preprocessed))
