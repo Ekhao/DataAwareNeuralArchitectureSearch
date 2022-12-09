@@ -5,6 +5,7 @@ import tensorflow as tf
 import sklearn.metrics
 import numpy as np
 import pathlib
+import struct
 
 
 class InputModel:
@@ -124,7 +125,11 @@ class InputModel:
 
         converter = tf.lite.TFLiteConverter.from_saved_model(
             tf_model_file.resolve().as_posix())
-        tflite_model = converter.convert()
+        try:
+            tflite_model = converter.convert()
+        except struct.error:
+            return 2000000000
+
         tflite_model_file = save_directory/"tflite_model"
         model_size = tflite_model_file.write_bytes(tflite_model)
         return model_size
