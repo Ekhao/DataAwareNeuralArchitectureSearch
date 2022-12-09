@@ -77,10 +77,9 @@ class InputModelGenerator:
             print("Saving InputModel and metrics in logs...")
             self.__save_to_csv(csv_log_name, model_number, input_model)
 
-            print("Checking if model is on the pareto front...")
+            print("Saving InputModel for pareto front calculation")
             # Save the models that are pareto optimal
-            pareto_optimal_models = self.save_pareto_optimal_models(
-                input_model, pareto_optimal_models)
+            pareto_optimal_models.append(input_model)
 
         pareto_optimal_models = self.__prune_non_pareto_optimal_models(
             pareto_optimal_models)
@@ -92,16 +91,16 @@ class InputModelGenerator:
             writer.writerow([model_number, self.search_space.input_decode(
                 input_model.input_configuration), self.search_space.model_decode(input_model.model_configuration), input_model.accuracy, input_model.precision, input_model.recall, input_model.model_size])
 
-    def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
-        new_list = pareto_optimal_models
-        dominated = False
-        for previous_input_model in pareto_optimal_models:
-            if previous_input_model.better_input_model(current_input_model):
-                dominated = True
-                break
-        if not dominated:
-            new_list.append(current_input_model)
-        return new_list
+    # def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
+    #    new_list = pareto_optimal_models
+    #    dominated = False
+    #    for previous_input_model in pareto_optimal_models:
+    #        if previous_input_model.better_input_model(current_input_model):
+    #            dominated = True
+    #            break
+    #    if not dominated:
+    #        new_list.append(current_input_model)
+    #    return new_list
 
     # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
 
