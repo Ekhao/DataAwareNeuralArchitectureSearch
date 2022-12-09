@@ -5,6 +5,7 @@ import constants
 import random
 import copy
 import numpy as np
+import math
 
 
 class EvolutionaryController(controller.Controller):
@@ -58,7 +59,9 @@ class EvolutionaryController(controller.Controller):
 
     @staticmethod
     def __evaluate_fitness(input_model):
-        return input_model.accuracy + input_model.precision + input_model.recall
+        model_size_score = math.exp(-input_model.model_size /
+                                    constants.MODEL_SIZE_APPROXIMATE_RANGE)
+        return input_model.accuracy + input_model.precision + input_model.recall + model_size_score
 
     def __generate_new_unevaluated_configurations(self):
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration

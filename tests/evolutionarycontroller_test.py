@@ -62,6 +62,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         input_model.accuracy = 0.91
         input_model.precision = 0.2
         input_model.recall = 0.5
+        input_model.model_size = 64266
 
         evolutionary_controller.update_parameters(input_model)
         self.assertTrue(
@@ -73,9 +74,10 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         input_model.accuracy = 0.4
         input_model.precision = 0.5
         input_model.recall = 0.6
+        input_model.model_size = 56356
         fitness = evolutionarycontroller.EvolutionaryController._EvolutionaryController__evaluate_fitness(
             input_model)
-        self.assertEqual(fitness, 1.5)
+        self.assertAlmostEqual(fitness, 2.06917917)
 
     def test_generate_new_unevaluated_population(self):
         search_space = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]), ([

@@ -50,7 +50,8 @@ class DatasetLoader:
         sound_gain = constants.SOUND_GAIN
         noise_gain = constants.NOISE_GAIN
         normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
-        anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)
+        anomalous_noise_zip = zip(
+            base_anomalous_audio, anomalous_noise_audio)
         self.base_normal_audio = Parallel(
             n_jobs=constants.NUM_CORES_TO_USE)(delayed(self.mix_audio)(audio, sound_gain, noise, noise_gain) for audio, noise in normal_noise_zip)
         self.base_anomalous_audio = Parallel(

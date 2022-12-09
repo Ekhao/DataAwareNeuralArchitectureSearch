@@ -5,6 +5,7 @@ import tensorflow as tf
 import sklearn.metrics
 import numpy as np
 import pathlib
+import struct
 
 
 class InputModel:
@@ -52,7 +53,7 @@ class InputModel:
         except ValueError:
             return None
 
-        # The standard convolutional model has dense layers at its end for classification - let us make the same assumption TODO: should be a part of search space
+        # The standard convolutional model has dense layers at its end for classification - let us make the same assumption
         model.add(tf.keras.layers.Flatten())
 
         model.add(tf.keras.layers.Dense(
@@ -124,7 +125,11 @@ class InputModel:
 
         converter = tf.lite.TFLiteConverter.from_saved_model(
             tf_model_file.resolve().as_posix())
-        tflite_model = converter.convert()
+        try:
+            tflite_model = converter.convert()
+        except struct.error:
+            return 2000000000
+
         tflite_model_file = save_directory/"tflite_model"
         model_size = tflite_model_file.write_bytes(tflite_model)
         return model_size
