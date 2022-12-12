@@ -9,7 +9,7 @@ import constants
 
 
 class InputModelGenerator:
-    def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer="Adam", metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
+    def __init__(self, num_target_classes, loss_function, controller, seed, dataset_loader: datasetloader.DatasetLoader, optimizer="Adam", metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
         self.controller = controller
@@ -28,6 +28,7 @@ class InputModelGenerator:
         self.hop_length = hop_length
         self.num_mel_banks = num_mel_banks
         self.num_mfccs = num_mfccs
+        self.seed = seed
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
@@ -52,7 +53,7 @@ class InputModelGenerator:
             # Create input and model from configuration
             input_model = inputmodel.InputModel()
             input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer)
+                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
             # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
             # If we create an infeasible inputmodel we simply skip to proposing the next model
