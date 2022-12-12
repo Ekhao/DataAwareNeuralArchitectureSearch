@@ -69,7 +69,7 @@ def main():
             constants.SEARCH_SPACE, seed=args.seed)
 
     input_model_generator = inputmodelgenerator.InputModelGenerator(
-        constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader, seed=args.seed)
+        constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader)
     pareto_front = input_model_generator.run_input_nas(
         num_of_models=args.num_models)
 
