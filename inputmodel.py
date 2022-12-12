@@ -14,9 +14,10 @@ class InputModel:
         pass
 
     # A "secondary" constructor to allow the creation of an InputModelClass for access to methods without loading datasets a creating neural network models.
-    def initialize_input_model(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer) -> None:
+    def initialize_input_model(self, input_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed) -> None:
         self.input_configuration = input_configuration
         self.model_configuration = model_configuration
+        self.seed = seed
 
         self.input = self.create_input(
             input_configuration=input_configuration, search_space=search_space, dataset_loader=dataset_loader, frame_size=frame_size, hop_length=hop_length, num_mel_banks=num_mel_banks, num_mfccs=num_mfccs)
@@ -120,7 +121,7 @@ class InputModel:
         return
 
     def __evaluate_model_size(self):
-        unique_extension = random.randint(0, 10000000)
+        unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
         tf_model_file = save_directory/f"tf_model-{unique_extension}"
         tf.saved_model.save(self.model, tf_model_file)

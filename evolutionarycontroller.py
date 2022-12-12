@@ -13,6 +13,7 @@ class EvolutionaryController(controller.Controller):
     def __init__(self, search_space, seed=None, population_size=constants.POPULATION_SIZE, max_num_layers=constants.MAX_NUM_LAYERS, crossover_ratio=constants.CROSSOVER_RATIO, tournament_amount=constants.POPULATION_UPDATE_RATIO) -> None:
         super().__init__(search_space)
         random.seed(seed)
+        self.seed = seed
         self.currently_evaluating = None
         self.unevaluated_configurations = []
         self.population = []

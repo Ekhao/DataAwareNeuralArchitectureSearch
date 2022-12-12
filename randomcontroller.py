@@ -7,6 +7,7 @@ class RandomController (controller.Controller):
     def __init__(self, search_space, seed=None, max_num_layers=constants.MAX_NUM_LAYERS):
         super().__init__(search_space)
         random.seed(seed)
+        self.seed = seed
         self.max_num_layers = max_num_layers
 
     def generate_configuration(self):

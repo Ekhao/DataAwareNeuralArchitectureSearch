@@ -28,6 +28,7 @@ class InputModelGenerator:
         self.hop_length = hop_length
         self.num_mel_banks = num_mel_banks
         self.num_mfccs = num_mfccs
+        self.seed = controller.seed
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
@@ -52,7 +53,7 @@ class InputModelGenerator:
             # Create input and model from configuration
             input_model = inputmodel.InputModel()
             input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer)
+                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
             # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
             # If we create an infeasible inputmodel we simply skip to proposing the next model
