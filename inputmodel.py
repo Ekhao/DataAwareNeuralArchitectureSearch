@@ -123,6 +123,7 @@ class InputModel:
     def __evaluate_model_size(self):
         unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
+        save_directory.mkdir(exist_ok=True)
 
         #tf_model_file = save_directory/f"tf_model-{unique_extension}"
         #tf.saved_model.save(self.model, tf_model_file)
