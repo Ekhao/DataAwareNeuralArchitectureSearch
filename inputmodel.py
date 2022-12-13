@@ -134,6 +134,7 @@ class InputModel:
         except Exception as e:
             print(
                 f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later.")
+            return 2000000001
         try:
             tflite_model = converter.convert()
         except struct.error:
@@ -141,6 +142,7 @@ class InputModel:
         except Exception as e:
             print(
                 f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later.")
+            return 2000000001
 
         tflite_model_file = save_directory/f"tflite_model-{unique_extension}"
         model_size = tflite_model_file.write_bytes(tflite_model)
