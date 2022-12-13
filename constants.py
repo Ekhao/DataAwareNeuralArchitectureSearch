@@ -7,7 +7,7 @@ NUM_CORES_TO_USE = -1
 # Search space parameters:
 # Model Layer: Amount of filters, filter size, and activation function
 # Input: Sample rate and preprocessing type
-SEARCH_SPACE = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [
+SEARCH_SPACE = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64], [
     3, 5], ["relu", "sigmoid"]), ([48000], [
         "spectrogram"]))
 
