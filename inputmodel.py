@@ -87,7 +87,7 @@ class InputModel:
 
         print("Start predicting")
 
-        y_hat = self.model.predict(X_test, batch_size=batch_size)
+        y_hat = self.model.predict(X_test)
 
         print("Done predicting, start transforming")
 
