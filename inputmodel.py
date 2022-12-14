@@ -85,18 +85,29 @@ class InputModel:
         self.model.fit(x=X_train, y=y_train, epochs=num_epochs,
                        batch_size=batch_size, class_weight=class_weight)
 
+        print("Start predicting")
+
         y_hat = self.model.predict(X_test, batch_size=batch_size)
+
+        print("Done predicting, start transforming")
 
         # Transform the output one hot incoding into class indices
         y_hat = tf.math.top_k(input=y_hat, k=1).indices.numpy()[:, 0]
 
+        print("Done transforming, calculating accuracy")
+
         # We would like to get accuracy, precision, recall and model size.
         self.accuracy = sklearn.metrics.accuracy_score(
             y_true=y_test, y_pred=y_hat)
+        print("Done accuracy, calculating precision")
         self.precision = sklearn.metrics.precision_score(
             y_true=y_test, y_pred=y_hat)
+
+        print("Done precision, calculating recall")
         self.recall = sklearn.metrics.recall_score(
             y_true=y_test, y_pred=y_hat)
+
+        print("Done recall, calculating model_size")
         self.model_size = self.__evaluate_model_size()
 
     def better_accuracy(self, other_configuration):
@@ -123,6 +134,7 @@ class InputModel:
     def __evaluate_model_size(self):
         start = time.perf_counter()
 
+        print("Create directory...")
         unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
         save_directory.mkdir(exist_ok=True)
