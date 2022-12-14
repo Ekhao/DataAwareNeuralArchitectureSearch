@@ -1,4 +1,4 @@
-Model Number, Accuracy, Precision, Recall, Model Size
+Model Number,Accuracy,Precision,Recall,Model Size
 6, 0.9227272727272727, 0.7948717948717948, 0.775, 9064
 7, 0.8272727272727273, 0.515625, 0.825, 8960
 8, 1.0, 1.0, 1.0, 9556
