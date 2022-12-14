@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
+font = {"size": 12}
+
 run1 = pd.read_csv(
     "experiment/results/pareto_front_exp1_run1.csv", index_col="Model Number")
 run2 = pd.read_csv(
@@ -38,11 +40,11 @@ run5 = run5.sort_values(by=["Model Size"])
 # Plot F1 score against Model Size
 plt.close("all")
 _, ax = plt.subplots()
-ax.plot(run1["Model Size"], run1["F1"], "-k", label="Run 1")
-ax.plot(run2["Model Size"], run2["F1"], "--k", label="Run 2")
-ax.plot(run3["Model Size"], run3["F1"], "-.k", label="Run 3")
-ax.plot(run4["Model Size"], run4["F1"], ":k", label="Run 4")
-ax.plot(run5["Model Size"], run5["F1"], ".-k", label="Run 5")
+ax.plot(run1["Model Size"], run1["F1"], "xk", label="Run 1")
+ax.plot(run2["Model Size"], run2["F1"], "+k", label="Run 2")
+ax.plot(run3["Model Size"], run3["F1"], "ok", label="Run 3")
+ax.plot(run4["Model Size"], run4["F1"], "vk", label="Run 4")
+ax.plot(run5["Model Size"], run5["F1"], "sk", label="Run 5")
 ax.set_xlim(16000, 7000)
 ax.set_ylim(0.2, 1.2)
 ax.grid()
@@ -50,17 +52,17 @@ ax.set_xlabel("Model Size in Bytes")
 ax.set_ylabel("F1-Score")
 ax.legend(loc="lower left")
 
-for i, label in enumerate(run1.index.to_numpy()):
-    plt.annotate(
-        label, (run1.iloc[i]["Model Size"]+100, run1.iloc[i]["F1"]+0.03))
-for i, label in enumerate(run2.index.to_numpy()):
-    plt.annotate(label, (run2.iloc[i]["Model Size"], run2.iloc[i]["F1"]))
-for i, label in enumerate(run3.index.to_numpy()):
-    plt.annotate(label, (run3.iloc[i]["Model Size"], run3.iloc[i]["F1"]))
-for i, label in enumerate(run4.index.to_numpy()):
-    plt.annotate(label, (run4.iloc[i]["Model Size"], run4.iloc[i]["F1"]))
-for i, label in enumerate(run5.index.to_numpy()):
-    plt.annotate(label, (run5.iloc[i]["Model Size"], run5.iloc[i]["F1"]))
+# for i, label in enumerate(run1.index.to_numpy()):
+#    plt.annotate(
+#        label, (run1.iloc[i]["Model Size"]-50, run1.iloc[i]["F1"]+0.01))
+# for i, label in enumerate(run2.index.to_numpy()):
+#    plt.annotate(label, (run2.iloc[i]["Model Size"], run2.iloc[i]["F1"]))
+# for i, label in enumerate(run3.index.to_numpy()):
+#    plt.annotate(label, (run3.iloc[i]["Model Size"], run3.iloc[i]["F1"]))
+# for i, label in enumerate(run4.index.to_numpy()):
+#    plt.annotate(label, (run4.iloc[i]["Model Size"], run4.iloc[i]["F1"]))
+# for i, label in enumerate(run5.index.to_numpy()):
+#    plt.annotate(label, (run5.iloc[i]["Model Size"], run5.iloc[i]["F1"]))
 
 
 plt.savefig(f"figures/pareto-normal.png", format="png")
