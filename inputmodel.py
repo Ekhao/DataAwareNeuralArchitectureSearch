@@ -6,7 +6,7 @@ import sklearn.metrics
 import numpy as np
 import pathlib
 import struct
-import random
+import time
 
 
 class InputModel:
@@ -121,6 +121,8 @@ class InputModel:
         return
 
     def __evaluate_model_size(self):
+        start = time.perf_counter()
+
         unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
         save_directory.mkdir(exist_ok=True)
@@ -129,14 +131,20 @@ class InputModel:
         #tf.saved_model.save(self.model, tf_model_file)
 
         try:
+            print(f"Convert1 model...")
             converter = tf.lite.TFLiteConverter.from_keras_model(
                 self.model)
+            convert1 = time.perf_counter()
+            print(f"Converting1 model  took: {start-convert1}")
         except Exception as e:
             print(
                 f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later.")
             return 2000000001
         try:
+            print(f"Convert2 model..")
             tflite_model = converter.convert()
+            convert2 = time.perf_counter()
+            print(f"Converting2 model took: {convert1-convert2}")
         except struct.error:
             return 2000000000
         except Exception as e:
@@ -145,6 +153,15 @@ class InputModel:
             return 2000000001
 
         tflite_model_file = save_directory/f"tflite_model-{unique_extension}"
+
+        print("Start saving model...")
         model_size = tflite_model_file.write_bytes(tflite_model)
+        save = time.perf_counter()
+        print(f"Saving model took: {convert2-save}")
+
+        print("Start removing model...")
         tflite_model_file.unlink()
+        remove = time.perf_counter()
+        print(f"Removing model took: {save-remove}")
+
         return model_size
