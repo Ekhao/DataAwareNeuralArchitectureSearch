@@ -85,11 +85,13 @@ class InputModel:
         self.model.fit(x=X_train, y=y_train, epochs=num_epochs,
                        batch_size=batch_size, class_weight=class_weight)
 
+        start = time.perf_counter()
         print("Start predicting")
 
         y_hat = self.model.predict(X_test)
 
-        print("Done predicting, start transforming")
+        print(
+            f"Done predicting, start transforming. Time predict took: {time.perf_counter()-start}")
 
         # Transform the output one hot incoding into class indices
         y_hat = tf.math.top_k(input=y_hat, k=1).indices.numpy()[:, 0]
