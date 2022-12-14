@@ -88,7 +88,7 @@ class InputModel:
         start = time.perf_counter()
         print("Start predicting")
 
-        y_hat = self.model.predict(X_test)
+        y_hat = self.model(X_test, training=False)
 
         print(
             f"Done predicting, start transforming. Time predict took: {time.perf_counter()-start}")
