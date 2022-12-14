@@ -49,4 +49,18 @@ ax.grid()
 ax.set_xlabel("Model Size in Bytes")
 ax.set_ylabel("F1-Score")
 ax.legend(loc="lower left")
+
+for i, label in enumerate(run1.index.to_numpy()):
+    plt.annotate(
+        label, (run1.iloc[i]["Model Size"]+100, run1.iloc[i]["F1"]+0.03))
+for i, label in enumerate(run2.index.to_numpy()):
+    plt.annotate(label, (run2.iloc[i]["Model Size"], run2.iloc[i]["F1"]))
+for i, label in enumerate(run3.index.to_numpy()):
+    plt.annotate(label, (run3.iloc[i]["Model Size"], run3.iloc[i]["F1"]))
+for i, label in enumerate(run4.index.to_numpy()):
+    plt.annotate(label, (run4.iloc[i]["Model Size"], run4.iloc[i]["F1"]))
+for i, label in enumerate(run5.index.to_numpy()):
+    plt.annotate(label, (run5.iloc[i]["Model Size"], run5.iloc[i]["F1"]))
+
+
 plt.savefig(f"figures/pareto-normal.png", format="png")
