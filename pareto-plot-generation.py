@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
-import math
 import pandas as pd
-import numpy as np
 
 run1 = pd.read_csv(
     "experiment/results/pareto_front_exp1_run1.csv", index_col="Model Number")
@@ -29,6 +27,13 @@ run3["F1"] = run3.apply(lambda row: add_f1_score(row), axis=1)
 run4["F1"] = run4.apply(lambda row: add_f1_score(row), axis=1)
 run5["F1"] = run5.apply(lambda row: add_f1_score(row), axis=1)
 
+# Sort dataframes by model size
+run1 = run1.sort_values(by=["Model Size"])
+run2 = run2.sort_values(by=["Model Size"])
+run3 = run3.sort_values(by=["Model Size"])
+run4 = run4.sort_values(by=["Model Size"])
+run5 = run5.sort_values(by=["Model Size"])
+
 
 # Plot F1 score against Model Size
 plt.close("all")
@@ -38,10 +43,10 @@ ax.plot(run2["Model Size"], run2["F1"], label="Run 2")
 ax.plot(run3["Model Size"], run3["F1"], label="Run 3")
 ax.plot(run4["Model Size"], run4["F1"], label="Run 4")
 ax.plot(run5["Model Size"], run5["F1"], label="Run 5")
-ax.set_xlim(16000, 8000)
+ax.set_xlim(16000, 7000)
+ax.set_ylim(0.2, 1.2)
 # ax.grid()
-#ax.set_ylim(0, 4)
 ax.set_xlabel("Model Size in Bytes")
 ax.set_ylabel("F1-Score")
-ax.legend(loc="upper right")
+ax.legend(loc="lower left")
 plt.savefig(f"figures/pareto-normal.png", format="png")
