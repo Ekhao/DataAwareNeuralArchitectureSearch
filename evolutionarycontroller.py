@@ -383,6 +383,9 @@ class EvolutionaryController(controller.Controller):
         # Change preprocessing. Preprocessing in the current search space is in the second position of the search space tuple.
         current_preprocessing = decoded_input[1]
         new_preprocessing = current_preprocessing
+        if len(self.search_space.input_search_space_options[1]) == 1:
+            return configuration
+
         while new_preprocessing == current_preprocessing:
             new_preprocessing = random.choice(
                 self.search_space.input_search_space_options[1])
