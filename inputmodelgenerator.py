@@ -32,6 +32,7 @@ class InputModelGenerator:
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
+        input = None
         csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
         with open(csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
@@ -51,9 +52,20 @@ class InputModelGenerator:
 
             print("Creating input and model from configuration...")
             # Create input and model from configuration
-            input_model = inputmodel.InputModel()
-            input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+            if input == None:
+                input_model = inputmodel.InputModel()
+                input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
+                                                   num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+
+                input = input_model.input
+            else:
+                input_model = inputmodel.InputModel()
+                input_model.input = input
+                input_model.model = input_model.create_model(
+                    model_configuration, self.search_space, input[0][0].shape, self.num_target_classes, self.optimizer, self.loss_function, self.metrics, self.width_dense_layer)
+                input_model.seed = self.seed
+                input_model.input_configuration = input_configuration
+                input_model.model_configuration = model_configuration
 
             # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
             # If we create an infeasible inputmodel we simply skip to proposing the next model
