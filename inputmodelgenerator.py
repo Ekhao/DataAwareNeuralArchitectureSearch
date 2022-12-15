@@ -58,6 +58,9 @@ class InputModelGenerator:
                                                    num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
                 input = input_model.input
+                num_normal_samples = input_model.num_normal_samples
+                num_anomalous_samples = input_model.num_anomalous_samples
+
             else:
                 input_model = inputmodel.InputModel()
                 input_model.input = input
@@ -66,6 +69,8 @@ class InputModelGenerator:
                 input_model.seed = self.seed
                 input_model.input_configuration = input_configuration
                 input_model.model_configuration = model_configuration
+                input_model.num_normal_samples = num_normal_samples
+                input_model.num_anomalous_samples = num_anomalous_samples
 
             # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
             # If we create an infeasible inputmodel we simply skip to proposing the next model
