@@ -3,16 +3,27 @@ import math
 import pandas as pd
 import numpy as np
 
-run1 = pd.read_csv(
+run11 = pd.read_csv(
     "experiment/results/evolution_exp1_run1.csv", index_col="Model Number")
-run2 = pd.read_csv(
+run12 = pd.read_csv(
     "experiment/results/evolution_exp1_run2.csv", index_col="Model Number")
-run3 = pd.read_csv(
+run13 = pd.read_csv(
     "experiment/results/evolution_exp1_run3.csv", index_col="Model Number")
-run4 = pd.read_csv(
+run14 = pd.read_csv(
     "experiment/results/evolution_exp1_run4.csv", index_col="Model Number")
-run5 = pd.read_csv(
+run15 = pd.read_csv(
     "experiment/results/evolution_exp1_run5.csv", index_col="Model Number")
+
+run21 = pd.read_csv(
+    "experiment/results/evolution_exp2_run1.csv", index_col="Model Number")
+run22 = pd.read_csv(
+    "experiment/results/evolution_exp2_run2.csv", index_col="Model Number")
+run23 = pd.read_csv(
+    "experiment/results/evolution_exp2_run3.csv", index_col="Model Number")
+run24 = pd.read_csv(
+    "experiment/results/evolution_exp2_run4.csv", index_col="Model Number")
+run25 = pd.read_csv(
+    "experiment/results/evolution_exp2_run5.csv", index_col="Model Number")
 
 # Calculate their fitness function
 
@@ -24,37 +35,64 @@ def add_fitness_function(row):
         row["Precision"] + row["Recall"] + model_size_score
 
 
-run1["Fitness"] = run1.apply(lambda row: add_fitness_function(row), axis=1)
-run2["Fitness"] = run2.apply(lambda row: add_fitness_function(row), axis=1)
-run3["Fitness"] = run3.apply(lambda row: add_fitness_function(row), axis=1)
-run4["Fitness"] = run4.apply(lambda row: add_fitness_function(row), axis=1)
-run5["Fitness"] = run5.apply(lambda row: add_fitness_function(row), axis=1)
+run11["Fitness"] = run11.apply(lambda row: add_fitness_function(row), axis=1)
+run12["Fitness"] = run12.apply(lambda row: add_fitness_function(row), axis=1)
+run13["Fitness"] = run13.apply(lambda row: add_fitness_function(row), axis=1)
+run14["Fitness"] = run14.apply(lambda row: add_fitness_function(row), axis=1)
+run15["Fitness"] = run15.apply(lambda row: add_fitness_function(row), axis=1)
+
+run21["Fitness"] = run21.apply(lambda row: add_fitness_function(row), axis=1)
+run22["Fitness"] = run22.apply(lambda row: add_fitness_function(row), axis=1)
+run23["Fitness"] = run23.apply(lambda row: add_fitness_function(row), axis=1)
+run24["Fitness"] = run24.apply(lambda row: add_fitness_function(row), axis=1)
+run25["Fitness"] = run25.apply(lambda row: add_fitness_function(row), axis=1)
+
 
 # Generate x axises
-x_values_run1 = range(1, len(run1["Fitness"]) + 1, 20)
-x_values_run2 = range(1, len(run2["Fitness"]) + 1, 20)
-x_values_run3 = range(1, len(run3["Fitness"]) + 1, 20)
-x_values_run4 = range(1, len(run4["Fitness"]) + 1, 20)
-x_values_run5 = range(1, len(run5["Fitness"]) + 1, 20)
+x_values_run11 = range(1, len(run11["Fitness"]) + 1, 20)
+x_values_run12 = range(1, len(run12["Fitness"]) + 1, 20)
+x_values_run13 = range(1, len(run13["Fitness"]) + 1, 20)
+x_values_run14 = range(1, len(run14["Fitness"]) + 1, 20)
+x_values_run15 = range(1, len(run15["Fitness"]) + 1, 20)
+
+x_values_run21 = range(1, len(run21["Fitness"]) + 1, 20)
+x_values_run22 = range(1, len(run22["Fitness"]) + 1, 20)
+x_values_run23 = range(1, len(run23["Fitness"]) + 1, 20)
+x_values_run24 = range(1, len(run24["Fitness"]) + 1, 20)
+x_values_run25 = range(1, len(run25["Fitness"]) + 1, 20)
 
 # Calculate average values of a number of rows to reduce clutter
-run1 = run1.groupby(np.arange(len(run1))//20).mean(numeric_only=True)
-run2 = run2.groupby(np.arange(len(run2))//20).mean(numeric_only=True)
-run3 = run3.groupby(np.arange(len(run3))//20).mean(numeric_only=True)
-run4 = run4.groupby(np.arange(len(run4))//20).mean(numeric_only=True)
-run5 = run5.groupby(np.arange(len(run5))//20).mean(numeric_only=True)
+run11 = run11.groupby(np.arange(len(run11))//20).max(numeric_only=True)
+run12 = run12.groupby(np.arange(len(run12))//20).max(numeric_only=True)
+run13 = run13.groupby(np.arange(len(run13))//20).max(numeric_only=True)
+run14 = run14.groupby(np.arange(len(run14))//20).max(numeric_only=True)
+run15 = run15.groupby(np.arange(len(run15))//20).max(numeric_only=True)
+
+run21 = run21.groupby(np.arange(len(run21))//20).max(numeric_only=True)
+run22 = run22.groupby(np.arange(len(run22))//20).max(numeric_only=True)
+run23 = run23.groupby(np.arange(len(run23))//20).max(numeric_only=True)
+run24 = run24.groupby(np.arange(len(run24))//20).max(numeric_only=True)
+run25 = run25.groupby(np.arange(len(run25))//20).max(numeric_only=True)
 
 plt.close("all")
 _, ax = plt.subplots()
-ax.plot(x_values_run1, run1["Fitness"], "-k", label="Run 1")
-ax.plot(x_values_run2, run2["Fitness"], "--k", label="Run 2")
-ax.plot(x_values_run3, run3["Fitness"], "-.k", label="Run 3")
-ax.plot(x_values_run4, run4["Fitness"], ":k", label="Run 4")
-ax.plot(x_values_run5, run5["Fitness"], ".-k", label="Run 5")
+
+ax.plot(x_values_run11, run11["Fitness"], "-k", label="Run 1")
+ax.plot(x_values_run12, run12["Fitness"], "--k", label="Run 2")
+ax.plot(x_values_run13, run13["Fitness"], "-.k", label="Run 3")
+ax.plot(x_values_run14, run14["Fitness"], ":k", label="Run 4")
+ax.plot(x_values_run15, run15["Fitness"], ".-k", label="Run 5")
+
+ax.plot(x_values_run21, run21["Fitness"], "-b", label="Run 1")
+ax.plot(x_values_run22, run22["Fitness"], "--b", label="Run 2")
+ax.plot(x_values_run23, run23["Fitness"], "-.b", label="Run 3")
+ax.plot(x_values_run24, run24["Fitness"], ":b", label="Run 4")
+ax.plot(x_values_run25, run25["Fitness"], ".-b", label="Run 5")
+
 ax.set_xlim(0, 300)
 ax.grid()
 ax.set_ylim(0, 4)
 ax.set_xlabel("# of Models Evaluated")
 ax.set_ylabel("Performance Estimation Score")
 ax.legend(loc="lower right")
-plt.savefig(f"figures/evolution-normal.png", format="png")
+plt.savefig(f"figures/evolution-combined.png", format="png")

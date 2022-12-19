@@ -1,7 +1,7 @@
 import numpy as np
 import csv
 import datetime
-
+import pathlib
 
 import inputmodel
 import datasetloader
@@ -32,11 +32,17 @@ class InputModelGenerator:
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
+        previous_input_configuration = None
+        previous_input = None
+
+        save_directory = pathlib.Path("./inputmodel_logs/")
+        save_directory.mkdir(exist_ok=True)
         csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
         with open(csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["Model Number", "Input Configuration",
                             "Model Configuration", "Accuracy", "Precision", "Recall", "Model Size"])
+
         for model_number in range(num_of_models):
             # Print that we are now running a new sample
             print("-"*100)
@@ -50,10 +56,19 @@ class InputModelGenerator:
                 f"Input configuration: {self.search_space.input_decode(input_configuration)}\nModel configuration: {self.search_space.model_decode(model_configuration)}")
 
             print("Creating input and model from configuration...")
-            # Create input and model from configuration
-            input_model = inputmodel.InputModel()
-            input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                               num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+            if input_configuration != previous_input_configuration:
+                # Create input and model from configuration
+                input_model = inputmodel.InputModel()
+                input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
+                                                   num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+            else:
+                input_model = inputmodel.InputModel()
+                input_model.alternate_initialize_input_model(previous_input, input_configuration, model_configuration, self.search_space, self.num_target_classes,
+                                                             self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                input_model.num_normal_samples = len(
+                    self.dataset_loader.base_normal_audio)
+                input_model.num_anomalous_samples = len(
+                    self.dataset_loader.base_anomalous_audio)
 
             # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
             # If we create an infeasible inputmodel we simply skip to proposing the next model
@@ -73,6 +88,8 @@ class InputModelGenerator:
             self.controller.update_parameters(input_model)
 
             print("Freeing loaded data and model to reduce memory consumption...")
+            previous_input_configuration = input_model.input_configuration
+            previous_input = input_model.input
             input_model.free_input_model()
 
             print("Saving InputModel and metrics in logs...")

@@ -26,6 +26,19 @@ class InputModel:
         self.model = self.create_model(
             model_configuration=model_configuration, search_space=search_space, input_shape=self.input[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
 
+    # An alternative constructor to use when input remains constant to avoid repeated loading.
+    def alternate_initialize_input_model(self, input, input_configuration, model_configuration, search_space: searchspace.SearchSpace, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed) -> None:
+        self.input_configuration = input_configuration
+        self.model_configuration = model_configuration
+        self.seed = seed
+
+        self.input = input
+        # We need to subscript the dataset two times.
+        # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
+        # Second subscript is to choose the first entry (all entries should have the same shape)
+        self.model = self.create_model(
+            model_configuration=model_configuration, search_space=search_space, input_shape=self.input[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
+
     def create_input(self, input_configuration: int, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs) -> tuple:
         input_config = search_space.input_decode(input_configuration)
 
