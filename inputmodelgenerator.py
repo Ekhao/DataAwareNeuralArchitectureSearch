@@ -32,11 +32,15 @@ class InputModelGenerator:
 
     def run_input_nas(self, num_of_models):
         pareto_optimal_models = []
+        previous_input_configuration = None
+        previous_input = None
+
         csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
         with open(csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["Model Number", "Input Configuration",
                             "Model Configuration", "Accuracy", "Precision", "Recall", "Model Size"])
+
         for model_number in range(num_of_models):
             # Print that we are now running a new sample
             print("-"*100)
