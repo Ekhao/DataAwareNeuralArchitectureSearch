@@ -120,7 +120,6 @@ class InputModel:
         return
 
     def __evaluate_model_size(self):
-        print("Create directory...")
         unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
         save_directory.mkdir(exist_ok=True)
