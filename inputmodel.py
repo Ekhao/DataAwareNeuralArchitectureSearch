@@ -27,7 +27,7 @@ class InputModel:
             model_configuration=model_configuration, search_space=search_space, input_shape=self.input[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
 
     # An alternative constructor to use when input remains constant to avoid repeated loading.
-    def initialize_input_model(self, input, input_configuration, model_configuration, search_space: searchspace.SearchSpace, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed) -> None:
+    def alternate_initialize_input_model(self, input, input_configuration, model_configuration, search_space: searchspace.SearchSpace, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed) -> None:
         self.input_configuration = input_configuration
         self.model_configuration = model_configuration
         self.seed = seed

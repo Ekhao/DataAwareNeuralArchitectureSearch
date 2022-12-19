@@ -1,7 +1,7 @@
 import numpy as np
 import csv
 import datetime
-
+import pathlib
 
 import inputmodel
 import datasetloader
@@ -35,6 +35,8 @@ class InputModelGenerator:
         previous_input_configuration = None
         previous_input = None
 
+        save_directory = pathlib.Path("./inputmodel_logs/")
+        save_directory.mkdir(exist_ok=True)
         csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
         with open(csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
@@ -61,8 +63,8 @@ class InputModelGenerator:
                                                    num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
             else:
                 input_model = inputmodel.InputModel()
-                input_model.initialize_input_model(previous_input, input_configuration, model_configuration, self.search_space, self.num_target_classes,
-                                                   self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                input_model.alternate_initialize_input_model(previous_input, input_configuration, model_configuration, self.search_space, self.num_target_classes,
+                                                             self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
                 input_model.num_normal_samples = len(
                     self.dataset_loader.base_normal_audio)
                 input_model.num_anomalous_samples = len(
