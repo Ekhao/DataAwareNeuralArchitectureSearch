@@ -6,7 +6,6 @@ import sklearn.metrics
 import numpy as np
 import pathlib
 import struct
-import random
 
 
 class InputModel:
@@ -123,15 +122,15 @@ class InputModel:
     def __evaluate_model_size(self):
         unique_extension = self.seed
         save_directory = pathlib.Path("./tmp/")
-        tf_model_file = save_directory/f"tf_model-{unique_extension}"
-        tf.saved_model.save(self.model, tf_model_file)
+        save_directory.mkdir(exist_ok=True)
 
         try:
-            converter = tf.lite.TFLiteConverter.from_saved_model(
-                tf_model_file.resolve().as_posix())
+            converter = tf.lite.TFLiteConverter.from_keras_model(
+                self.model)
         except Exception as e:
             print(
                 f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later.")
+            return 2000000001
         try:
             tflite_model = converter.convert()
         except struct.error:
@@ -139,7 +138,12 @@ class InputModel:
         except Exception as e:
             print(
                 f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later.")
+            return 2000000001
 
         tflite_model_file = save_directory/f"tflite_model-{unique_extension}"
+
         model_size = tflite_model_file.write_bytes(tflite_model)
+
+        tflite_model_file.unlink()
+
         return model_size
