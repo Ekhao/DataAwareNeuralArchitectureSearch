@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 
 font = {"size": 12}
@@ -61,6 +62,15 @@ run24 = run24.sort_values(by=["Model Size"])
 run25 = run25.sort_values(by=["Model Size"])
 
 # Plot F1 score against Model Size
+
+
+def thousands(x, pos):
+    'The two args are the value and tick position'
+    return '%dK' % (x*1e-3)
+
+
+mkformatter = FuncFormatter(thousands)
+
 plt.close("all")
 _, ax = plt.subplots()
 
@@ -78,19 +88,9 @@ ax.set_xlabel("Model Size in Bytes")
 ax.set_ylabel("F1-Score")
 ax.legend(loc="lower left")
 
-# for i, label in enumerate(run1.index.to_numpy()):
-#    plt.annotate(
-#        label, (run1.iloc[i]["Model Size"]-50, run1.iloc[i]["F1"]+0.01))
-# for i, label in enumerate(run2.index.to_numpy()):
-#    plt.annotate(label, (run2.iloc[i]["Model Size"], run2.iloc[i]["F1"]))
-# for i, label in enumerate(run3.index.to_numpy()):
-#    plt.annotate(label, (run3.iloc[i]["Model Size"], run3.iloc[i]["F1"]))
-# for i, label in enumerate(run4.index.to_numpy()):
-#    plt.annotate(label, (run4.iloc[i]["Model Size"], run4.iloc[i]["F1"]))
-# for i, label in enumerate(run5.index.to_numpy()):
-#    plt.annotate(label, (run5.iloc[i]["Model Size"], run5.iloc[i]["F1"]))
+ax.xaxis.set_major_formatter(mkformatter)
 
-plt.savefig(f"figures/pareto-normal.png", format="png")
+plt.savefig(f"figures/pareto-data-aware.png", format="png")
 
 # Plot fixed input experiment:
 plt.close("all")
@@ -110,5 +110,6 @@ ax.set_xlabel("Model Size in Bytes")
 ax.set_ylabel("F1-Score")
 ax.legend(loc="lower left")
 
-# plt.xscale("log")
-plt.savefig(f"figures/pareto-fixed-input.png", format="png")
+ax.xaxis.set_major_formatter(mkformatter)
+
+plt.savefig(f"figures/pareto-fixed-data.png", format="png")
