@@ -3,7 +3,7 @@ import unittest.mock
 
 import evolutionarycontroller
 
-import inputmodel
+import datamodel
 import searchspace
 
 import copy
@@ -58,7 +58,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         search_space.initialize_search_space()
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
-        input_model = inputmodel.InputModel()
+        input_model = datamodel.InputModel()
         input_model.accuracy = 0.91
         input_model.precision = 0.2
         input_model.recall = 0.5
@@ -66,7 +66,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
 
         evolutionary_controller.update_parameters(input_model)
         self.assertTrue(
-            type(evolutionary_controller.population[0][0]) is inputmodel.InputModel)
+            type(evolutionary_controller.population[0][0]) is datamodel.InputModel)
         self.assertTrue(0 <= evolutionary_controller.population[0][1] <= 3)
 
     def test_evaluate_fitness(self):

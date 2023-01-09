@@ -1,9 +1,9 @@
 import unittest
 
-import inputmodelgenerator
+import datamodelgenerator
 import randomcontroller
 import constants
-import inputmodel
+import datamodel
 
 import tensorflow as tf
 
@@ -11,9 +11,9 @@ import tensorflow as tf
 class InputModelGeneratorTestCase(unittest.TestCase):
 
     def test_adding_pareto_optimal_model(self):
-        input_model1 = inputmodel.InputModel()
-        input_model2 = inputmodel.InputModel()
-        input_model3 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
+        input_model2 = datamodel.InputModel()
+        input_model3 = datamodel.InputModel()
 
         input_model1.input_configuration = 5
         input_model1.model_configuration = [5, 8, 14]
@@ -36,11 +36,11 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model3.recall = 0.81
         input_model3.model_size = 786565
 
-        input_model_generator = inputmodelgenerator.InputModelGenerator(
+        input_model_generator = datamodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
         pareto_optimal_models = [input_model1, input_model2, input_model3]
 
-        input_model4 = inputmodel.InputModel()
+        input_model4 = datamodel.InputModel()
         input_model4.input_configuration = 2
         input_model4.model_configuration = [1, 9, 5, 2]
         input_model4.accuracy = 0.02
@@ -52,9 +52,9 @@ class InputModelGeneratorTestCase(unittest.TestCase):
             input_model1, input_model2, input_model3])
 
     def test_adding_non_pareto_optimal_model(self):
-        input_model1 = inputmodel.InputModel()
-        input_model2 = inputmodel.InputModel()
-        input_model3 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
+        input_model2 = datamodel.InputModel()
+        input_model3 = datamodel.InputModel()
 
         input_model1.accuracy = 0.60
         input_model1.precision = 0.56
@@ -71,11 +71,11 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model3.recall = 0.81
         input_model3.model_size = 786565
 
-        input_model_generator = inputmodelgenerator.InputModelGenerator(
+        input_model_generator = datamodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
         pareto_optimal_models = [input_model1, input_model2, input_model3]
 
-        input_model4 = inputmodel.InputModel()
+        input_model4 = datamodel.InputModel()
         input_model4.accuracy = 0.02
         input_model4.precision = 0.55
         input_model4.recall = 0.82
@@ -96,9 +96,9 @@ class InputModelGeneratorTestCase(unittest.TestCase):
     #     self.assertEqual(pareto_optimal_models, None)
 
     def test_prune_non_pareto_optimal_model(self):
-        input_model1 = inputmodel.InputModel()
-        input_model2 = inputmodel.InputModel()
-        input_model3 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
+        input_model2 = datamodel.InputModel()
+        input_model3 = datamodel.InputModel()
 
         input_model1.accuracy = 0.60
         input_model1.precision = 0.56
@@ -115,13 +115,13 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model3.recall = 0.81
         input_model3.model_size = 786565
 
-        input_model4 = inputmodel.InputModel()
+        input_model4 = datamodel.InputModel()
         input_model4.accuracy = 0.02
         input_model4.precision = 0.55
         input_model4.recall = 0.82
         input_model4.model_size = 786565
 
-        input_model_generator = inputmodelgenerator.InputModelGenerator(
+        input_model_generator = datamodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
         pareto_optimal_models = [input_model1,
                                  input_model2, input_model3, input_model4]
@@ -132,10 +132,10 @@ class InputModelGeneratorTestCase(unittest.TestCase):
             input_model1, input_model2, input_model3])
 
     def test_prune_non_pareto_optimal_model_sequential(self):
-        input_model1 = inputmodel.InputModel()
-        input_model2 = inputmodel.InputModel()
-        input_model3 = inputmodel.InputModel()
-        input_model_generator = inputmodelgenerator.InputModelGenerator(
+        input_model1 = datamodel.InputModel()
+        input_model2 = datamodel.InputModel()
+        input_model3 = datamodel.InputModel()
+        input_model_generator = datamodelgenerator.InputModelGenerator(
             2, tf.keras.losses.SparseCategoricalCrossentropy(), controller=randomcontroller.RandomController(constants.SEARCH_SPACE, seed=20), dataset_loader=None)
 
         input_model1.accuracy = 0.60
@@ -153,7 +153,7 @@ class InputModelGeneratorTestCase(unittest.TestCase):
         input_model3.recall = 0.86
         input_model3.model_size = 358532
 
-        input_model4 = inputmodel.InputModel()
+        input_model4 = datamodel.InputModel()
         input_model4.accuracy = 0.60
         input_model4.precision = 0.58
         input_model4.recall = 0.82

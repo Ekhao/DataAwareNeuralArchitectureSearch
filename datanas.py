@@ -1,13 +1,13 @@
-# In this simple implementation the NAS search space only consists of convolutional models.
+# Third Party Libraries
+import argparse
+import tensorflow as tf
 
-import inputmodelgenerator
+# Local Imports
+import datamodelgenerator
 import datasetloader
 import constants
 import randomcontroller
 import evolutionarycontroller
-
-import argparse
-import tensorflow as tf
 
 
 def main():
@@ -31,6 +31,9 @@ def main():
         "-s", "--seed", help="A seed to be given to the random number generators of the program.", type=int, default=None)
     args = argparser.parse_args()
 
+    # The following block of code enables memory growth for the GPU during runtime.
+    # It is suspected that this helps avoiding out of memory errors.
+    # https://www.tensorflow.org/guide/gpu
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -68,7 +71,7 @@ def main():
         controller = randomcontroller.RandomController(
             constants.SEARCH_SPACE, seed=args.seed)
 
-    input_model_generator = inputmodelgenerator.InputModelGenerator(
+    input_model_generator = datamodelgenerator.InputModelGenerator(
         constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader)
     pareto_front = input_model_generator.run_input_nas(
         num_of_models=args.num_models)

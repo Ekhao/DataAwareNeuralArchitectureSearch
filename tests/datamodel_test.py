@@ -1,7 +1,7 @@
 import unittest
 import unittest.mock
 
-import inputmodel
+import datamodel
 
 import searchspace
 import datasetloader
@@ -21,7 +21,7 @@ class InputModelTestCase(unittest.TestCase):
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        input_model = inputmodel.InputModel()
+        input_model = datamodel.InputModel()
 
         input_model.initialize_input_model(input_configuration=3, model_configuration=[10, 5, 3], search_space=search_space, dataset_loader=dataset_loader, frame_size=2048,
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=52)
@@ -29,7 +29,7 @@ class InputModelTestCase(unittest.TestCase):
             input_model.model, tf.keras.Model))
 
     def test_better_configuration(self):
-        input_model1 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
         input_model1.accuracy = 0.98
         input_model1.precision = 0.7
         input_model1.recall = 0.99
@@ -43,7 +43,7 @@ class InputModelTestCase(unittest.TestCase):
         self.assertTrue(input_model1.better_input_model(input_model2))
 
     def test_not_better_configuration(self):
-        input_model1 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
         input_model1.accuracy = 0.60
         input_model1.precision = 0.56
         input_model1.recall = 0.82
@@ -56,7 +56,7 @@ class InputModelTestCase(unittest.TestCase):
         self.assertFalse(input_model2.better_input_model(input_model1))
 
     def test_better_configuration_model_size(self):
-        input_model1 = inputmodel.InputModel()
+        input_model1 = datamodel.InputModel()
         input_model1.accuracy = 0.9
         input_model1.precision = 0.8
         input_model1.recall = 0.8
@@ -77,7 +77,7 @@ class InputModelTestCase(unittest.TestCase):
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        input_model = inputmodel.InputModel()
+        input_model = datamodel.InputModel()
 
         input_model.initialize_input_model(input_configuration=3, model_configuration=[10, 5, 3], search_space=search_space, dataset_loader=dataset_loader, frame_size=2048,
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=20)
@@ -97,7 +97,7 @@ class InputModelTestCase(unittest.TestCase):
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        input_model = inputmodel.InputModel()
+        input_model = datamodel.InputModel()
 
         input_model.initialize_input_model(input_configuration=20, model_configuration=[1], search_space=search_space, dataset_loader=dataset_loader, frame_size=2048,
                                            hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=20)

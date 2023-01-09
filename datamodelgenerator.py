@@ -3,7 +3,7 @@ import csv
 import datetime
 import pathlib
 
-import inputmodel
+import datamodel
 import datasetloader
 import constants
 
@@ -58,11 +58,11 @@ class InputModelGenerator:
             print("Creating input and model from configuration...")
             if input_configuration != previous_input_configuration:
                 # Create input and model from configuration
-                input_model = inputmodel.InputModel()
+                input_model = datamodel.InputModel()
                 input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
                                                    num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
             else:
-                input_model = inputmodel.InputModel()
+                input_model = datamodel.InputModel()
                 input_model.alternate_initialize_input_model(previous_input, input_configuration, model_configuration, self.search_space, self.num_target_classes,
                                                              self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
                 input_model.num_normal_samples = len(
