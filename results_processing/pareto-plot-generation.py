@@ -5,26 +5,26 @@ import pandas as pd
 font = {"size": 12}
 
 run11 = pd.read_csv(
-    "experiment/results/pareto_front_exp1_run1.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp1_run1.csv", index_col="Model Number")
 run12 = pd.read_csv(
-    "experiment/results/pareto_front_exp1_run2.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp1_run2.csv", index_col="Model Number")
 run13 = pd.read_csv(
-    "experiment/results/pareto_front_exp1_run3.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp1_run3.csv", index_col="Model Number")
 run14 = pd.read_csv(
-    "experiment/results/pareto_front_exp1_run4.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp1_run4.csv", index_col="Model Number")
 run15 = pd.read_csv(
-    "experiment/results/pareto_front_exp1_run5.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp1_run5.csv", index_col="Model Number")
 
 run21 = pd.read_csv(
-    "experiment/results/pareto_front_exp2_run1.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp2_run1.csv", index_col="Model Number")
 run22 = pd.read_csv(
-    "experiment/results/pareto_front_exp2_run2.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp2_run2.csv", index_col="Model Number")
 run23 = pd.read_csv(
-    "experiment/results/pareto_front_exp2_run3.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp2_run3.csv", index_col="Model Number")
 run24 = pd.read_csv(
-    "experiment/results/pareto_front_exp2_run4.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp2_run4.csv", index_col="Model Number")
 run25 = pd.read_csv(
-    "experiment/results/pareto_front_exp2_run5.csv", index_col="Model Number")
+    "../original_experiment/results/pareto_front_exp2_run5.csv", index_col="Model Number")
 
 # Calculate F1 score for each row
 # Formula taken from: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
@@ -90,7 +90,7 @@ ax.legend(loc="lower left")
 
 ax.xaxis.set_major_formatter(mkformatter)
 
-plt.savefig(f"figures/pareto-data-aware.png", format="png")
+plt.savefig(f"../figures/pareto-data-aware.png", format="png")
 
 # Plot fixed input experiment:
 plt.close("all")
@@ -112,4 +112,4 @@ ax.legend(loc="lower left")
 
 ax.xaxis.set_major_formatter(mkformatter)
 
-plt.savefig(f"figures/pareto-fixed-data.png", format="png")
+plt.savefig(f"../figures/pareto-fixed-data.png", format="png")
