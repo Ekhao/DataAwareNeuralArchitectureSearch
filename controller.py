@@ -11,5 +11,5 @@ class Controller(ABC):
         pass
 
     @abstractmethod
-    def update_parameters(self, input_model):
+    def update_parameters(self, data_model):
         pass

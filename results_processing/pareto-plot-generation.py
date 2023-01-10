@@ -92,7 +92,7 @@ ax.xaxis.set_major_formatter(mkformatter)
 
 plt.savefig(f"../figures/pareto-data-aware.png", format="png")
 
-# Plot fixed input experiment:
+# Plot fixed data experiment:
 plt.close("all")
 _, ax = plt.subplots()
 

@@ -2,15 +2,12 @@ import itertools
 
 
 class SearchSpace:
-    def __init__(self, model_layer_search_space, input_search_space) -> None:
-        self.input_search_space_options = input_search_space
+    def __init__(self, model_layer_search_space, data_search_space) -> None:
+        self.data_search_space_options = data_search_space
         self.model_layer_search_space_options = model_layer_search_space
 
-    # This method must be called first after init before the other methods of this class can be relied on.
-    # This is done so that a search space object can be created for e.g. tests and as a constant without using a significant amount of processing time.
-    def initialize_search_space(self):
-        self.input_search_space_enumerated = self.search_space_enumerator(
-            *self.input_search_space_options)
+        self.data_search_space_enumerated = self.search_space_enumerator(
+            *self.data_search_space_options)
         # Maybe add dropout and output layers to the model search space
         self.model_layer_search_space_enumerated = self.search_space_enumerator(
             *self.model_layer_search_space_options)
@@ -23,11 +20,11 @@ class SearchSpace:
 
         return dict(zip(keys, values))
 
-    def input_decode(self, input_number: int) -> tuple:
-        return self.input_search_space_enumerated[input_number]
+    def data_decode(self, data_number: int) -> tuple:
+        return self.data_search_space_enumerated[data_number]
 
-    def input_encode(self, input_configuration: tuple) -> int:
-        return list(self.input_search_space_enumerated.keys())[list(self.input_search_space_enumerated.values()).index(input_configuration)]
+    def data_encode(self, data_configuration: tuple) -> int:
+        return list(self.data_search_space_enumerated.keys())[list(self.data_search_space_enumerated.values()).index(data_configuration)]
 
     def model_layer_decode(self, model_layer_number: int) -> tuple:
         return self.model_layer_search_space_enumerated[model_layer_number]

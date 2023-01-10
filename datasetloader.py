@@ -69,7 +69,7 @@ class DatasetLoader:
 
         return X_train, X_test, y_train, y_test
 
-    # This method is called to load the dataset according to a specific input configuration.
+    # This method is called to load the dataset according to a specific data configuration.
     # The base dataset (full granularity) should already have been loaded in the constructor of this class.
     def load_dataset(self, target_sr, preprocessing_type, frame_size, hop_length, num_mel_banks=None, num_mfccs=None) -> tuple:
         normal_audio = copy.deepcopy(self.base_normal_audio)

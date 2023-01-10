@@ -1,8 +1,13 @@
-# Third Party Libraries
+# This python file contains the main function of the Data Aware Neural Architecture Search. It is responsible for parsing the command line arguments, initializing the search space, loading the data and initializing the controller. It then calls the controller to perform the search and returns the pareto front.
+
+# Standard Library Imports
 import argparse
+
+# Third Party Imports
 import tensorflow as tf
 
 # Local Imports
+import searchspace
 import datamodelgenerator
 import datasetloader
 import constants
@@ -48,7 +53,8 @@ def main():
             print(e)
 
     print("Initializing search space...")
-    constants.SEARCH_SPACE.initialize_search_space()
+    search_space = searchspace.SearchSpace(
+        constants.MODEL_LAYER_SEARCH_SPACE, constants.DATA_SEARCH_SPACE)
 
     print("Loading dataset files from persistent storage...")
     if args.path_normal_files == None:
@@ -64,25 +70,24 @@ def main():
     print("Initializing controller...")
     if args.controller == "evolution":
         controller = evolutionarycontroller.EvolutionaryController(
-            search_space=constants.SEARCH_SPACE, seed=args.seed)
+            search_space, args.seed)
         controller.initialize_controller(
             trivial_initialization=args.initialization == "trivial")
     else:
-        controller = randomcontroller.RandomController(
-            constants.SEARCH_SPACE, seed=args.seed)
+        controller = randomcontroller.RandomController(search_space, args.seed)
 
-    input_model_generator = datamodelgenerator.InputModelGenerator(
+    data_model_generator = datamodelgenerator.DataModelGenerator(
         constants.NUM_OUTPUT_CLASSES, constants.LOSS_FUNCTION, controller=controller, dataset_loader=dataset_loader)
-    pareto_front = input_model_generator.run_input_nas(
+    pareto_front = data_model_generator.run_data_nas(
         num_of_models=args.num_models)
 
     print("Models on pareto front: ")
-    for input_model in pareto_front:
-        print(constants.SEARCH_SPACE.input_decode(
-            input_model.input_configuration))
-        print(constants.SEARCH_SPACE.model_decode(
-            input_model.model_configuration))
-        print(f"Accuracy: {input_model.accuracy}, Precision: {input_model.precision}, Recall: {input_model.recall}, Model Size (in bytes): {input_model.model_size}.")
+    for data_model in pareto_front:
+        print(search_space.data_decode(
+            data_model.data_configuration))
+        print(search_space.model_decode(
+            data_model.model_configuration))
+        print(f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Model Size (in bytes): {data_model.model_size}.")
         print("-"*200)
 
 

@@ -25,12 +25,11 @@ class EvolutionaryController(controller.Controller):
 
     def initialize_controller(self, trivial_initialization=True):
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
-        # Due to the general way that the search space is defined I do not believe that it is possible to generate trivial inputs or individual layers without other assumptions.
         self.trivial_initialization = trivial_initialization
         if trivial_initialization:
             for i in range(self.population_size):
                 self.unevaluated_configurations.append((random.randrange(
-                    0, len(self.search_space.input_search_space_enumerated)), [random.randrange(0, len(self.search_space.model_layer_search_space_enumerated))]))
+                    0, len(self.search_space.data_search_space_enumerated)), [random.randrange(0, len(self.search_space.model_layer_search_space_enumerated))]))
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
             for i in range(self.population_size):
@@ -40,7 +39,7 @@ class EvolutionaryController(controller.Controller):
                     model_layer_configuration.append(random.randrange(
                         0, len(self.search_space.model_layer_search_space_enumerated)))
                 self.unevaluated_configurations.append((random.randrange(
-                    0, len(self.search_space.input_search_space_enumerated)), model_layer_configuration))
+                    0, len(self.search_space.data_search_space_enumerated)), model_layer_configuration))
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self):
@@ -50,19 +49,19 @@ class EvolutionaryController(controller.Controller):
 
         return self.unevaluated_configurations.pop(0)
 
-    # Updates the input_model with its measured performance.
+    # Updates the data_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
 
-    def update_parameters(self, input_model):
-        # Add performance of the currently evaluating input model to the population
-        fitness = self.__evaluate_fitness(input_model)
-        self.population.append((input_model, fitness))
+    def update_parameters(self, data_model):
+        # Add performance of the currently evaluating data model to the population
+        fitness = self.__evaluate_fitness(data_model)
+        self.population.append((data_model, fitness))
 
     @staticmethod
-    def __evaluate_fitness(input_model):
-        model_size_score = math.exp(-input_model.model_size /
+    def __evaluate_fitness(data_model):
+        model_size_score = math.exp(-data_model.model_size /
                                     constants.MODEL_SIZE_APPROXIMATE_RANGE)
-        return input_model.accuracy + input_model.precision + input_model.recall + model_size_score
+        return data_model.accuracy + data_model.precision + data_model.recall + model_size_score
 
     def __generate_new_unevaluated_configurations(self):
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
@@ -72,7 +71,7 @@ class EvolutionaryController(controller.Controller):
         # Use tournament selection to decide which population to breed
         breeders = self.__tournament_selection()
 
-        # After this we would like breeders to be configurations instead of a tuple of a InputModel and a fitness
+        # After this we would like breeders to be configurations instead of a tuple of a DataModel and a fitness
         breeder_configurations = self.__get_breeder_configurations(breeders)
 
         amount_of_new_individuals = self.population_size - \
@@ -107,10 +106,10 @@ class EvolutionaryController(controller.Controller):
 
         return winners
 
-    # This function takes a list of tuples of InputModels and their fitness.
-    # It should return the configurations that generated those input models to create mutations and crossovers of them
+    # This function takes a list of tuples of DataModels and their fitness.
+    # It should return the configurations that generated those data models to create mutations and crossovers of them
     def __get_breeder_configurations(self, breeders):
-        return [[breeder[0].input_configuration,
+        return [[breeder[0].data_configuration,
                  breeder[0].model_configuration] for breeder in breeders]
 
     def __create_mutations(self, configurations_to_mutate, amount):
@@ -329,73 +328,73 @@ class EvolutionaryController(controller.Controller):
         return mutation
 
     def __increase_sample_rate_mutation(self, configuration):
-        # Decode input configuration
-        decoded_input = self.search_space.input_decode(configuration[0])
+        # Decode data configuration
+        decoded_data = self.search_space.data_decode(configuration[0])
 
         # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
-        current_sample_rate = decoded_input[0]
+        current_sample_rate = decoded_data[0]
         new_sample_rate = None
-        for seach_space_sample_rate in reversed(self.search_space.input_search_space_options[0]):
+        for seach_space_sample_rate in reversed(self.search_space.data_search_space_options[0]):
             if seach_space_sample_rate > current_sample_rate:
                 new_sample_rate = seach_space_sample_rate
                 break
         if new_sample_rate == None:
             new_sample_rate = max(
-                self.search_space.input_search_space_options[0])
+                self.search_space.data_search_space_options[0])
 
         # Encode layer again
-        decoded_input = (new_sample_rate, decoded_input[1])
-        new_input = self.search_space.input_encode(decoded_input)
+        decoded_data = (new_sample_rate, decoded_data[1])
+        new_data = self.search_space.data_encode(decoded_data)
 
         # Add the layer to the configuration again
-        configuration = (new_input, configuration[1])
+        configuration = (new_data, configuration[1])
 
         return configuration
 
     def __decrease_sample_rate_mutation(self, configuration):
-        # Decode input configuration
-        decoded_input = self.search_space.input_decode(configuration[0])
+        # Decode data configuration
+        decoded_data = self.search_space.data_decode(configuration[0])
 
         # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
-        current_sample_rate = decoded_input[0]
+        current_sample_rate = decoded_data[0]
         new_sample_rate = None
-        for seach_space_sample_rate in self.search_space.input_search_space_options[0]:
+        for seach_space_sample_rate in self.search_space.data_search_space_options[0]:
             if seach_space_sample_rate < current_sample_rate:
                 new_sample_rate = seach_space_sample_rate
                 break
         if new_sample_rate == None:
             new_sample_rate = min(
-                self.search_space.input_search_space_options[0])
+                self.search_space.data_search_space_options[0])
 
         # Encode layer again
-        decoded_input = (new_sample_rate, decoded_input[1])
-        new_input = self.search_space.input_encode(decoded_input)
+        decoded_data = (new_sample_rate, decoded_data[1])
+        new_data = self.search_space.data_encode(decoded_data)
 
         # Add the layer to the configuration again
-        configuration = (new_input, configuration[1])
+        configuration = (new_data, configuration[1])
 
         return configuration
 
     def __change_preprocessing_mutation(self, configuration):
-        # Decode input configuration
-        decoded_input = self.search_space.input_decode(configuration[0])
+        # Decode data configuration
+        decoded_data = self.search_space.data_decode(configuration[0])
 
         # Change preprocessing. Preprocessing in the current search space is in the second position of the search space tuple.
-        current_preprocessing = decoded_input[1]
+        current_preprocessing = decoded_data[1]
         new_preprocessing = current_preprocessing
-        if len(self.search_space.input_search_space_options[1]) == 1:
+        if len(self.search_space.data_search_space_options[1]) == 1:
             return configuration
 
         while new_preprocessing == current_preprocessing:
             new_preprocessing = random.choice(
-                self.search_space.input_search_space_options[1])
+                self.search_space.data_search_space_options[1])
 
         # Encode layer again
-        decoded_input = (decoded_input[0], new_preprocessing)
-        new_input = self.search_space.input_encode(decoded_input)
+        decoded_data = (decoded_data[0], new_preprocessing)
+        new_data = self.search_space.data_encode(decoded_data)
 
         # Add the layer to the configuration again
-        configuration = (new_input, configuration[1])
+        configuration = (new_data, configuration[1])
 
         return configuration
 
@@ -411,14 +410,14 @@ class EvolutionaryController(controller.Controller):
         return crossovers
 
     def __crossover(self, configuration1, configuration2):
-        decoded_input1 = self.search_space.input_decode(configuration1[0])
-        decoded_input2 = self.search_space.input_decode(configuration2[0])
+        decoded_data1 = self.search_space.data_decode(configuration1[0])
+        decoded_data2 = self.search_space.data_decode(configuration2[0])
 
         decoded_model1 = self.search_space.model_decode(configuration1[1])
         decoded_model2 = self.search_space.model_decode(configuration2[1])
 
-        new_input = (random.choice((decoded_input1[0], decoded_input2[0])), random.choice((
-            decoded_input1[1], decoded_input2[1])))
+        new_data = (random.choice((decoded_data1[0], decoded_data2[0])), random.choice((
+            decoded_data1[1], decoded_data2[1])))
 
         num_layers_model1 = len(decoded_model1)
         num_layers_model2 = len(decoded_model2)
@@ -445,6 +444,6 @@ class EvolutionaryController(controller.Controller):
             for i in range(min_layers, num_layers_new_model):
                 new_model.append(copy.deepcopy(decoded_model2[i]))
 
-        encoded_input = self.search_space.input_encode(new_input)
+        encoded_data = self.search_space.data_encode(new_data)
         encoded_model = self.search_space.model_encode(new_model)
-        return (encoded_input, encoded_model)
+        return (encoded_data, encoded_model)

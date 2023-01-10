@@ -11,8 +11,8 @@ class RandomController (controller.Controller):
         self.max_num_layers = max_num_layers
 
     def generate_configuration(self):
-        input_configuation = random.randrange(
-            0, len(self.search_space.input_search_space_enumerated))
+        data_configuation = random.randrange(
+            0, len(self.search_space.data_search_space_enumerated))
 
         # Generate a number of layers. Maybe have this be something other than uniformly distributed at some point.
         number_of_layers = random.randint(1, self.max_num_layers)
@@ -21,8 +21,8 @@ class RandomController (controller.Controller):
             model_layer_configuration.append(random.randrange(
                 0, len(self.search_space.model_layer_search_space_enumerated)))
 
-        return (input_configuation, model_layer_configuration)
+        return (data_configuation, model_layer_configuration)
 
-    def update_parameters(self, input_model):
+    def update_parameters(self, data_model):
         # The random controller does not have any parameters that should be updated
         pass

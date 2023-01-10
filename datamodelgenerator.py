@@ -8,7 +8,7 @@ import datasetloader
 import constants
 
 
-class InputModelGenerator:
+class DataModelGenerator:
     def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer="Adam", metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
@@ -30,17 +30,17 @@ class InputModelGenerator:
         self.num_mfccs = num_mfccs
         self.seed = controller.seed
 
-    def run_input_nas(self, num_of_models):
+    def run_data_nas(self, num_of_models):
         pareto_optimal_models = []
-        previous_input_configuration = None
-        previous_input = None
+        previous_data_configuration = None
+        previous_data = None
 
-        save_directory = pathlib.Path("./inputmodel_logs/")
+        save_directory = pathlib.Path("./datamodel_logs/")
         save_directory.mkdir(exist_ok=True)
-        csv_log_name = f"inputmodel_logs/{datetime.datetime.now().isoformat()}.csv"
+        csv_log_name = f"datamodel_logs/{datetime.datetime.now().isoformat()}.csv"
         with open(csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["Model Number", "Input Configuration",
+            writer.writerow(["Model Number", "Data Configuration",
                             "Model Configuration", "Accuracy", "Precision", "Recall", "Model Size"])
 
         for model_number in range(num_of_models):
@@ -50,86 +50,76 @@ class InputModelGenerator:
 
             # Get configuration from controller
             print("Generating model configuration...")
-            input_configuration, model_configuration = self.controller.generate_configuration()
+            data_configuration, model_configuration = self.controller.generate_configuration()
 
             print(
-                f"Input configuration: {self.search_space.input_decode(input_configuration)}\nModel configuration: {self.search_space.model_decode(model_configuration)}")
+                f"Data configuration: {self.search_space.data_decode(data_configuration)}\nModel configuration: {self.search_space.model_decode(model_configuration)}")
 
-            print("Creating input and model from configuration...")
-            if input_configuration != previous_input_configuration:
-                # Create input and model from configuration
-                input_model = datamodel.InputModel()
-                input_model.initialize_input_model(input_configuration=input_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                                   num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+            print("Creating data and model from configuration...")
+            if data_configuration != previous_data_configuration:
+                # Create data and model from configuration
+                data_model = datamodel.DataModel()
+                data_model.initialize_data_model(data_configuration=data_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
+                                                 num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
             else:
-                input_model = datamodel.InputModel()
-                input_model.alternate_initialize_input_model(previous_input, input_configuration, model_configuration, self.search_space, self.num_target_classes,
-                                                             self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
-                input_model.num_normal_samples = len(
+                data_model = datamodel.DataModel()
+                data_model.alternate_initialize_data_model(previous_data, data_configuration, model_configuration, self.search_space, self.num_target_classes,
+                                                           self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                data_model.num_normal_samples = len(
                     self.dataset_loader.base_normal_audio)
-                input_model.num_anomalous_samples = len(
+                data_model.num_anomalous_samples = len(
                     self.dataset_loader.base_anomalous_audio)
 
-            # Some input and model configurations are infeasible. In this case the model created in the input model will be None.
-            # If we create an infeasible inputmodel we simply skip to proposing the next model
-            if input_model.model == None:
+            # Some data and model configurations are infeasible. In this case the model created in the data model will be None.
+            # If we create an infeasible datamodel we simply skip to proposing the next model
+            if data_model.model == None:
                 print("Infeasible model generated. Skipping to next configuration...")
                 continue
 
-            print("Evaluating performance of input and model")
-            # Evaluate performance of input and model
-            input_model.evaluate_input_model(self.num_epochs, self.batch_size)
+            print("Evaluating performance of data and model")
+            # Evaluate performance of data and model
+            data_model.evaluate_data_model(self.num_epochs, self.batch_size)
 
             print(
-                f"Model{model_number} metrics:\nAccuracy: {input_model.accuracy}\nPrecision: {input_model.precision}\nRecall: {input_model.recall}\nModel Size (bytes): {input_model.model_size}")
+                f"Model{model_number} metrics:\nAccuracy: {data_model.accuracy}\nPrecision: {data_model.precision}\nRecall: {data_model.recall}\nModel Size (bytes): {data_model.model_size}")
 
             print("Updating parameters of the controller...")
             # Update controller parameters
-            self.controller.update_parameters(input_model)
+            self.controller.update_parameters(data_model)
 
             print("Freeing loaded data and model to reduce memory consumption...")
-            previous_input_configuration = input_model.input_configuration
-            previous_input = input_model.input
-            input_model.free_input_model()
+            previous_data_configuration = data_model.data_configuration
+            previous_data = data_model.data
+            data_model.free_data_model()
 
-            print("Saving InputModel and metrics in logs...")
-            self.__save_to_csv(csv_log_name, model_number, input_model)
+            print("Saving DataModel and metrics in logs...")
+            self._save_to_csv(csv_log_name, model_number, data_model)
 
-            print("Saving InputModel for pareto front calculation")
+            print("Saving DataModel for pareto front calculation")
             # Save the models that are pareto optimal
-            pareto_optimal_models.append(input_model)
+            pareto_optimal_models.append(data_model)
 
-        pareto_optimal_models = self.__prune_non_pareto_optimal_models(
+        pareto_optimal_models = self._prune_non_pareto_optimal_models(
             pareto_optimal_models)
         return pareto_optimal_models
 
-    def __save_to_csv(self, csv_log_name, model_number, input_model):
+    def _save_to_csv(self, csv_log_name, model_number, data_model):
         with open(csv_log_name, "a", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([model_number, self.search_space.input_decode(
-                input_model.input_configuration), self.search_space.model_decode(input_model.model_configuration), input_model.accuracy, input_model.precision, input_model.recall, input_model.model_size])
-
-    # def save_pareto_optimal_models(self, current_input_model, pareto_optimal_models):
-    #    new_list = pareto_optimal_models
-    #    dominated = False
-    #    for previous_input_model in pareto_optimal_models:
-    #        if previous_input_model.better_input_model(current_input_model):
-    #            dominated = True
-    #            break
-    #    if not dominated:
-    #        new_list.append(current_input_model)
-    #    return new_list
+            writer.writerow([model_number, self.search_space.data_decode(
+                data_model.data_configuration), self.search_space.model_decode(data_model.model_configuration), data_model.accuracy, data_model.precision, data_model.recall, data_model.model_size])
 
     # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
 
-    def __prune_non_pareto_optimal_models(self, iterative_pareto_optimal_models):
+    @staticmethod
+    def _prune_non_pareto_optimal_models(iterative_pareto_optimal_models):
         iterative_pareto_optimal_models = np.array(
             iterative_pareto_optimal_models)
         is_optimal = np.ones(
             iterative_pareto_optimal_models.shape[0], dtype=bool)
         for i, model in enumerate(iterative_pareto_optimal_models):
             if is_optimal[i]:
-                is_optimal[is_optimal] = np.array([x.better_input_model(
+                is_optimal[is_optimal] = np.array([x.better_data_model(
                     model) for x in iterative_pareto_optimal_models[is_optimal]])
                 is_optimal[i] = True
         return list(iterative_pareto_optimal_models[is_optimal])
