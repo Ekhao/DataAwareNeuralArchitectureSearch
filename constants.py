@@ -1,19 +1,18 @@
-import tensorflow as tf
-import searchspace
-
 # Joblib Parameters
 NUM_CORES_TO_USE = 1
 
-# Search space parameters:
+
+# Search space parameters
+# Data: Sample rate and preprocessing type
+DATA_SEARCH_SPACE = [[2, 4, 8, 16, 32, 64, 128], [
+    3, 5], ["relu", "sigmoid"]]
 # Model Layer: Amount of filters, filter size, and activation function
-# Input: Sample rate and preprocessing type
-SEARCH_SPACE = searchspace.SearchSpace(([2, 4, 8, 16, 32, 64, 128], [
-    3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 375], [
-        "spectrogram", "mel-spectrogram", "mfcc"]))
+MODEL_LAYER_SEARCH_SPACE = [[48000, 24000, 12000, 6000, 3000, 1500, 750, 375], [
+    "spectrogram", "mel-spectrogram", "mfcc"]]
 
 # Model Parameters
 NUM_OUTPUT_CLASSES = 2
-LOSS_FUNCTION = tf.keras.losses.SparseCategoricalCrossentropy()
+LOSS_FUNCTION = "sparse_categorical_crossentropy"
 WIDTH_OF_DENSE_LAYER = 10
 
 # Dataset parameters
@@ -37,7 +36,7 @@ NUMBER_OF_MFCCS = 13  # Traditional values
 MAX_NUM_LAYERS = 5
 
 # Evaluation parameters
-OPTIMIZER = tf.keras.optimizers.Adam()
+OPTIMIZER = "adam"
 NUM_EPOCHS = 20
 BATCH_SIZE = 32
 MODEL_SIZE_APPROXIMATE_RANGE = 100000
