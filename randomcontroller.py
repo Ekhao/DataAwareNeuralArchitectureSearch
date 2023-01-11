@@ -1,6 +1,11 @@
+# A class that implements a completely random controller (search strategy).
+
+# Standard Library Imports
+import random
+
+# Local Imports
 import controller
 import constants
-import random
 
 
 class RandomController (controller.Controller):
