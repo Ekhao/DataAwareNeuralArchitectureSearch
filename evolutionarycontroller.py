@@ -1,11 +1,17 @@
-# A class that implements a controller based on evolutionary algorithms.
+# A class that implements a controller (search strategy) based on evolutionary algorithms.
+
+# Standard Library Imports
+import random
+import copy
+import math
+
+# Third Party Imports
+import numpy as np
+
+# Local Imports
 import controller
 import constants
 
-import random
-import copy
-import numpy as np
-import math
 
 
 class EvolutionaryController(controller.Controller):
