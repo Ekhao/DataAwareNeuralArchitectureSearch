@@ -1,8 +1,14 @@
-import numpy as np
+# This file contains the DataModelGenerator class which contains the main logic for the data aware neural architecture search. The DataModelGenerator class is responsible for making the controller create new configurations, creating data models according to those configurations, evaluating the data models and update the parameters of the controller according to this evaluation. Also saves the pareto frontier of data models.
+
+# Standard Library Imports
 import csv
 import datetime
 import pathlib
 
+# Third Party Imports
+import numpy as np
+
+# Local Imports
 import datamodel
 import datasetloader
 import constants
