@@ -11,9 +11,9 @@ import tensorflow as tf
 class DataModelGeneratorTestCase(unittest.TestCase):
 
     def test_adding_pareto_optimal_model(self):
-        data_model1 = datamodel.DataModel()
-        data_model2 = datamodel.DataModel()
-        data_model3 = datamodel.DataModel()
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model2 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model3 = datamodel.DataModel(None, None, None, None, None, None)
 
         data_model1.data_configuration = 5
         data_model1.model_configuration = [5, 8, 14]
@@ -38,7 +38,7 @@ class DataModelGeneratorTestCase(unittest.TestCase):
 
         pareto_optimal_models = [data_model1, data_model2, data_model3]
 
-        data_model4 = datamodel.DataModel()
+        data_model4 = datamodel.DataModel(None, None, None, None, None, None)
         data_model4.data_configuration = 2
         data_model4.model_configuration = [1, 9, 5, 2]
         data_model4.accuracy = 0.02
@@ -54,9 +54,9 @@ class DataModelGeneratorTestCase(unittest.TestCase):
             data_model1, data_model2, data_model3, data_model4])
 
     def test_adding_non_pareto_optimal_model(self):
-        data_model1 = datamodel.DataModel()
-        data_model2 = datamodel.DataModel()
-        data_model3 = datamodel.DataModel()
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model2 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model3 = datamodel.DataModel(None, None, None, None, None, None)
 
         data_model1.accuracy = 0.60
         data_model1.precision = 0.56
@@ -75,7 +75,7 @@ class DataModelGeneratorTestCase(unittest.TestCase):
 
         pareto_optimal_models = [data_model1, data_model2, data_model3]
 
-        data_model4 = datamodel.DataModel()
+        data_model4 = datamodel.DataModel(None, None, None, None, None, None)
         data_model4.accuracy = 0.02
         data_model4.precision = 0.55
         data_model4.recall = 0.82
@@ -86,9 +86,9 @@ class DataModelGeneratorTestCase(unittest.TestCase):
             data_model1, data_model2, data_model3])
 
     def test_prune_non_pareto_optimal_model(self):
-        data_model1 = datamodel.DataModel()
-        data_model2 = datamodel.DataModel()
-        data_model3 = datamodel.DataModel()
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model2 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model3 = datamodel.DataModel(None, None, None, None, None, None)
 
         data_model1.accuracy = 0.60
         data_model1.precision = 0.56
@@ -105,7 +105,7 @@ class DataModelGeneratorTestCase(unittest.TestCase):
         data_model3.recall = 0.81
         data_model3.model_size = 786565
 
-        data_model4 = datamodel.DataModel()
+        data_model4 = datamodel.DataModel(None, None, None, None, None, None)
         data_model4.accuracy = 0.02
         data_model4.precision = 0.55
         data_model4.recall = 0.82
@@ -120,9 +120,9 @@ class DataModelGeneratorTestCase(unittest.TestCase):
             data_model1, data_model2, data_model3])
 
     def test_prune_non_pareto_optimal_model_sequential(self):
-        data_model1 = datamodel.DataModel()
-        data_model2 = datamodel.DataModel()
-        data_model3 = datamodel.DataModel()
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model2 = datamodel.DataModel(None, None, None, None, None, None)
+        data_model3 = datamodel.DataModel(None, None, None, None, None, None)
 
         data_model1.accuracy = 0.60
         data_model1.precision = 0.8
@@ -139,7 +139,7 @@ class DataModelGeneratorTestCase(unittest.TestCase):
         data_model3.recall = 0.86
         data_model3.model_size = 358532
 
-        data_model4 = datamodel.DataModel()
+        data_model4 = datamodel.DataModel(None, None, None, None, None, None)
         data_model4.accuracy = 0.60
         data_model4.precision = 0.58
         data_model4.recall = 0.82

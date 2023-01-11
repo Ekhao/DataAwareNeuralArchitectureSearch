@@ -54,7 +54,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
             48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
         evolutionary_controller = evolutionarycontroller.EvolutionaryController(
             search_space=search_space, seed=32, population_size=2)
-        data_model = datamodel.DataModel()
+        data_model = datamodel.DataModel(None, None, None, None, None, None)
         data_model.accuracy = 0.91
         data_model.precision = 0.2
         data_model.recall = 0.5

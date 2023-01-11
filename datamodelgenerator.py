@@ -58,17 +58,12 @@ class DataModelGenerator:
             print("Creating data and model from configuration...")
             if data_configuration != previous_data_configuration:
                 # Create data and model from configuration
-                data_model = datamodel.DataModel()
-                data_model.initialize_data_model(data_configuration=data_configuration, model_configuration=model_configuration, search_space=self.search_space, dataset_loader=self.dataset_loader, frame_size=self.frame_size, hop_length=self.hop_length,
-                                                 num_mel_banks=self.num_mel_banks, num_mfccs=self.num_mfccs, num_target_classes=self.num_target_classes, model_optimizer=self.optimizer, model_loss_function=self.loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                data_model = datamodel.DataModel.from_data_configuration(data_configuration, model_configuration, self.search_space, self.
+                                                                         dataset_loader, self.frame_size, self.hop_length, self.num_mel_banks, self.num_mfccs, self.num_target_classes, self.optimizer, self.loss_function, self.metrics, self.width_dense_layer, self.seed)
             else:
-                data_model = datamodel.DataModel()
-                data_model.alternate_initialize_data_model(previous_data, data_configuration, model_configuration, self.search_space, self.num_target_classes,
-                                                           self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
-                data_model.num_normal_samples = len(
-                    self.dataset_loader.base_normal_audio)
-                data_model.num_anomalous_samples = len(
-                    self.dataset_loader.base_anomalous_audio)
+                # Use previous data and create model from configuration
+                data_model = datamodel.DataModel.from_preloaded_data(previous_data, len(self.dataset_loader.base_anomalous_audio),
+                                                                     len(self.dataset_loader.num_anomalous_samples), data_configuration, model_configuration, self.search_space, self.num_target_classes, self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
             # Some data and model configurations are infeasible. In this case the model created in the data model will be None.
             # If we create an infeasible datamodel we simply skip to proposing the next model
