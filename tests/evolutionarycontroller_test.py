@@ -71,7 +71,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         data_model.precision = 0.5
         data_model.recall = 0.6
         data_model.model_size = 56356
-        fitness = evolutionarycontroller.EvolutionaryController._EvolutionaryController__evaluate_fitness(
+        fitness = evolutionarycontroller.EvolutionaryController._evaluate_fitness(
             data_model)
         self.assertAlmostEqual(fitness, 2.06917917)
 
@@ -90,7 +90,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         self.assertEqual(
             evolutionary_controller.unevaluated_configurations, [])
 
-        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+        evolutionary_controller._generate_new_unevaluated_configurations()
 
         self.assertEqual(
             evolutionary_controller.population[0][0].data_configuration, 8)
@@ -118,7 +118,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         self.assertEqual(
             evolutionary_controller.unevaluated_configurations, [])
 
-        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+        evolutionary_controller._generate_new_unevaluated_configurations()
 
         self.assertEqual(
             evolutionary_controller.population[0][0].data_configuration, 8)
@@ -146,7 +146,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         self.assertEqual(
             evolutionary_controller.unevaluated_configurations, [])
 
-        evolutionary_controller._EvolutionaryController__generate_new_unevaluated_configurations()
+        evolutionary_controller._generate_new_unevaluated_configurations()
 
         self.assertEqual(
             evolutionary_controller.population[0][0].data_configuration, 8)
@@ -168,7 +168,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         data_model = unittest.mock.MagicMock(spec="datamodel.DataModel")
         evolutionary_controller.population = [(copy.deepcopy(data_model), random.uniform(0, 3))
                                               for i in range(20)]
-        winners = evolutionary_controller._EvolutionaryController__tournament_selection()
+        winners = evolutionary_controller._tournament_selection()
         self.assertEqual(len(winners), 10)
 
     def test_tournament_selection_low_population(self):
@@ -180,7 +180,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         data_model = unittest.mock.MagicMock(spec="datamodel.DataModel")
         evolutionary_controller.population = [(copy.deepcopy(data_model), random.uniform(0, 3))
                                               for i in range(1)]
-        winners = evolutionary_controller._EvolutionaryController__tournament_selection()
+        winners = evolutionary_controller._tournament_selection()
         self.assertEqual(len(winners), 1)
 
     def test_tournament_selection_no_population(self):
@@ -191,7 +191,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
             search_space=search_space, seed=32, population_size=2)
         data_model = unittest.mock.MagicMock(spec="datamodel.DataModel")
         evolutionary_controller.population = []
-        winners = evolutionary_controller._EvolutionaryController__tournament_selection()
+        winners = evolutionary_controller._tournament_selection()
         self.assertEqual(len(winners), 0)
 
     def test_get_breeder_configurations(self):
@@ -206,7 +206,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         breeders = [(copy.deepcopy(data_model), random.uniform(0, 3))
                     for i in range(10)]
 
-        breeder_configurations = evolutionary_controller._EvolutionaryController__get_breeder_configurations(
+        breeder_configurations = evolutionary_controller._get_breeder_configurations(
             breeders)
 
         self.assertEqual(breeder_configurations.pop()[0], 6)
@@ -225,7 +225,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__new_convolutional_layer_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._new_convolutional_layer_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -246,7 +246,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__new_convolutional_layer_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._new_convolutional_layer_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -267,7 +267,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__remove_convolutional_layer_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._remove_convolutional_layer_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -288,7 +288,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__remove_convolutional_layer_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._remove_convolutional_layer_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -309,7 +309,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__increase_number_of_filters_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._increase_number_of_filters_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -330,7 +330,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__decrease_number_of_filters_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._decrease_number_of_filters_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -351,7 +351,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__increase_filter_size_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._increase_filter_size_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -373,7 +373,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__decrease_filter_size_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._decrease_filter_size_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -394,7 +394,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__change_activation_function_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._change_activation_function_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual(data_configuration, evolutionary_controller.search_space.data_decode(
@@ -415,7 +415,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__increase_sample_rate_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._increase_sample_rate_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual((48000, "spectrogram"), evolutionary_controller.search_space.data_decode(
@@ -436,7 +436,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__decrease_sample_rate_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._decrease_sample_rate_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual((12000, "spectrogram"), evolutionary_controller.search_space.data_decode(
@@ -457,7 +457,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__decrease_sample_rate_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._decrease_sample_rate_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual((325, "spectrogram"), evolutionary_controller.search_space.data_decode(
@@ -478,7 +478,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__change_preprocessing_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._change_preprocessing_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual((24000, "mel-spectrogram"), evolutionary_controller.search_space.data_decode(
@@ -499,7 +499,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration = evolutionary_controller.search_space.model_encode(
             model_configuration)
 
-        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._EvolutionaryController__change_preprocessing_mutation(
+        mutated_data_configuration, mutated_model_configuration = evolutionary_controller._change_preprocessing_mutation(
             (encoded_data_configuration, encoded_model_configuration))
 
         self.assertEqual((24000, "mfcc"), evolutionary_controller.search_space.data_decode(
@@ -529,7 +529,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration2 = evolutionary_controller.search_space.model_encode(
             model_configuration2)
 
-        crossovered_data_configuration, crossovered_model_configuration = evolutionary_controller._EvolutionaryController__crossover(
+        crossovered_data_configuration, crossovered_model_configuration = evolutionary_controller._crossover(
             (encoded_data_configuration1, encoded_model_configuration1), (encoded_data_configuration2, encoded_model_configuration2))
 
         self.assertEqual((6000, "mel-spectrogram"), evolutionary_controller.search_space.data_decode(
@@ -559,7 +559,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         encoded_model_configuration2 = evolutionary_controller.search_space.model_encode(
             model_configuration2)
 
-        crossovered_data_configuration, crossovered_model_configuration = evolutionary_controller._EvolutionaryController__crossover(
+        crossovered_data_configuration, crossovered_model_configuration = evolutionary_controller._crossover(
             (encoded_data_configuration1, encoded_model_configuration1), (encoded_data_configuration2, encoded_model_configuration2))
 
         self.assertEqual((6000, "mfcc"), evolutionary_controller.search_space.data_decode(
@@ -578,7 +578,7 @@ class EvolutionaryontrollerTestCase(unittest.TestCase):
         deep_copy_unevaluated_configurations = copy.deepcopy(
             evolutionary_controller.unevaluated_configurations)
 
-        crossovers = evolutionary_controller._EvolutionaryController__create_crossovers(
+        crossovers = evolutionary_controller._create_crossovers(
             evolutionary_controller.unevaluated_configurations, 5)
 
         self.assertEqual(deep_copy_unevaluated_configurations,
