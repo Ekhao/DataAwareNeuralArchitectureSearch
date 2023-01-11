@@ -1,3 +1,6 @@
+# A base class for a controller - also known as a search strategy for the Data Aware Neural Architecture Search. Used as a template for creating other controllers.
+
+# Standard Library Imports
 from abc import ABC, abstractmethod
 
 
