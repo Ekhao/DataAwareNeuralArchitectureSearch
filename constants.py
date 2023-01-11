@@ -1,3 +1,5 @@
+# The configuration file for the Data Aware Neural Architecture Search. This file contains parameters that can be changed to modify the search.
+
 # Joblib Parameters
 NUM_CORES_TO_USE = 1
 
