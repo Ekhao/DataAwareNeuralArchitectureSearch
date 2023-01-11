@@ -1,3 +1,6 @@
+# This class implements the search space of the Data Aware Neural Architecture Search.
+
+# Standard Library Imports
 import itertools
 
 
