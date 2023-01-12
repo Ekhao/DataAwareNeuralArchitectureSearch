@@ -28,30 +28,30 @@ class DataModel:
     # A constructor to use when both data and model need to be created.
     @classmethod
     def from_data_configuration(cls, data_configuration, model_configuration, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed=None) -> None:
-        data = cls.create_data(
-            data_configuration=data_configuration, search_space=search_space, dataset_loader=dataset_loader, frame_size=frame_size, hop_length=hop_length, num_mel_banks=num_mel_banks, num_mfccs=num_mfccs)
-        # We need to subscript the dataset two times.
+        data = cls.create_data(data_configuration, search_space, dataset_loader,
+                               frame_size, hop_length, num_mel_banks, num_mfccs)
+        # For the data shape we need to subscript the dataset two times.
         # First subscript is to choose the training samples (here we could also chose the test samples - doesnt matter)
         # Second subscript is to choose the first entry (all entries should have the same shape)
-        model = cls.create_model(
-            model_configuration=model_configuration, search_space=search_space, data_shape=data[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
+        model = cls.create_model(model_configuration, search_space, data[0][0].shape, num_target_classes,
+                                 model_optimizer, model_loss_function, model_metrics, model_width_dense_layer)
 
         num_normal_samples = len(dataset_loader.base_normal_audio)
         num_anomalous_samples = len(dataset_loader.base_anomalous_audio)
 
-        return cls(data, data_configuration, model, model_configuration, seed, num_normal_samples, num_anomalous_samples)
+        return cls(data, data_configuration, model, model_configuration, num_normal_samples, num_anomalous_samples, seed)
 
     # An alternative constructor to use when data is already loaded and only model needs to be created.
     @classmethod
     def from_preloaded_data(cls, data, num_normal_samples, num_anomalous_samples, data_configuration, model_configuration, search_space: searchspace.SearchSpace, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer, seed=None) -> None:
 
-        # We need to subscript the dataset two times.
+        # For the data shape we need to subscript the dataset two times.
         # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
         # Second subscript is to choose the first entry (all entries should have the same shape)
         model = cls.create_model(
-            model_configuration=model_configuration, search_space=search_space, data_shape=data[0][0].shape, num_target_classes=num_target_classes, model_optimizer=model_optimizer, model_loss_function=model_loss_function, model_metrics=model_metrics, model_width_dense_layer=model_width_dense_layer)
+            model_configuration, search_space, data[0][0].shape, num_target_classes, model_optimizer, model_loss_function, model_metrics, model_width_dense_layer)
 
-        return cls(data, data_configuration, model, model_configuration, seed, num_normal_samples, num_anomalous_samples)
+        return cls(data, data_configuration, model, model_configuration, num_normal_samples, num_anomalous_samples, seed)
 
     @staticmethod
     def create_data(data_configuration: int, search_space: searchspace.SearchSpace, dataset_loader: datasetloader.DatasetLoader, frame_size, hop_length, num_mel_banks, num_mfccs) -> tuple:

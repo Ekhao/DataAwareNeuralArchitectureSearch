@@ -11,11 +11,10 @@ import numpy as np
 # Local Imports
 import datamodel
 import datasetloader
-import constants
 
 
 class DataModelGenerator:
-    def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer="Adam", metrics=["accuracy"], width_dense_layer=constants.WIDTH_OF_DENSE_LAYER, num_epochs=constants.NUM_EPOCHS, batch_size=constants.BATCH_SIZE, number_of_normal_files=constants.NUMBER_OF_NORMAL_FILES_TO_USE, number_of_anomalous_files=constants.NUMBER_OF_ANOMALOUS_FILES_TO_USE, path_to_normal_files=constants.PATH_TO_NORMAL_FILES, path_to_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES, frame_size=constants.FRAME_SIZE, hop_length=constants.HOP_LENGTH, num_mel_banks=constants.NUMBER_OF_MEL_FILTER_BANKS, num_mfccs=constants.NUMBER_OF_MFCCS):
+    def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer, metrics, width_dense_layer, num_epochs, batch_size, number_of_normal_files, number_of_anomalous_files, path_to_normal_files, path_to_anomalous_files, frame_size, hop_length, num_mel_banks, num_mfccs):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
         self.controller = controller
@@ -68,8 +67,8 @@ class DataModelGenerator:
                                                                          dataset_loader, self.frame_size, self.hop_length, self.num_mel_banks, self.num_mfccs, self.num_target_classes, self.optimizer, self.loss_function, self.metrics, self.width_dense_layer, self.seed)
             else:
                 # Use previous data and create model from configuration
-                data_model = datamodel.DataModel.from_preloaded_data(previous_data, len(self.dataset_loader.base_anomalous_audio),
-                                                                     len(self.dataset_loader.num_anomalous_samples), data_configuration, model_configuration, self.search_space, self.num_target_classes, self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                data_model = datamodel.DataModel.from_preloaded_data(previous_data, self.number_of_normal_files,
+                                                                     self.number_of_anomalous_files, data_configuration, model_configuration, self.search_space, self.num_target_classes, self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
             # Some data and model configurations are infeasible. In this case the model created in the data model will be None.
             # If we create an infeasible datamodel we simply skip to proposing the next model

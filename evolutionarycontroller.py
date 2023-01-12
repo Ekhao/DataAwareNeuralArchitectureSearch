@@ -10,12 +10,11 @@ import numpy as np
 
 # Local Imports
 import controller
-import constants
 
 
 class EvolutionaryController(controller.Controller):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
-    def __init__(self, search_space, seed=None, population_size=constants.POPULATION_SIZE, max_num_layers=constants.MAX_NUM_LAYERS, crossover_ratio=constants.CROSSOVER_RATIO, tournament_amount=constants.POPULATION_UPDATE_RATIO) -> None:
+    def __init__(self, search_space, population_size, max_num_layers, population_update_ratio, crossover_ratio, approximate_model_size, seed=None) -> None:
         super().__init__(search_space)
         random.seed(seed)
         self.seed = seed
@@ -25,8 +24,9 @@ class EvolutionaryController(controller.Controller):
         self.population_size = population_size
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
+        self.approximate_model_size = approximate_model_size
         self.tournament_amount = max(
-            1, round(population_size * tournament_amount))
+            1, round(population_size * population_update_ratio))
 
     def initialize_controller(self, trivial_initialization=True):
         # A paper I read claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
@@ -59,13 +59,14 @@ class EvolutionaryController(controller.Controller):
 
     def update_parameters(self, data_model):
         # Add performance of the currently evaluating data model to the population
-        fitness = self._evaluate_fitness(data_model)
+        fitness = self._evaluate_fitness(
+            data_model, self.approximate_model_size)
         self.population.append((data_model, fitness))
 
     @staticmethod
-    def _evaluate_fitness(data_model):
+    def _evaluate_fitness(data_model, model_size_approximate_range):
         model_size_score = math.exp(-data_model.model_size /
-                                    constants.MODEL_SIZE_APPROXIMATE_RANGE)
+                                    model_size_approximate_range)
         return data_model.accuracy + data_model.precision + data_model.recall + model_size_score
 
     def _generate_new_unevaluated_configurations(self):

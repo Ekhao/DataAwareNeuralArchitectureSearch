@@ -8,8 +8,8 @@ import constants
 
 class DatasetLoaderTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.dataset_loader = datasetloader.DatasetLoader(path_normal_files=constants.PATH_TO_NORMAL_FILES, path_anomalous_files=constants.PATH_TO_ANOMALOUS_FILES,
-                                                          path_noise_files=constants.PATH_TO_NOISE_FILES, case_noise_files="case1", num_normal_files=2, num_anomalous_files=2, channel=1)
+        self.dataset_loader = datasetloader.DatasetLoader(constants.PATH_NORMAL_FILES, constants.PATH_ANOMALOUS_FILES,
+                                                          constants.PATH_NOISE_FILES, "case1", 2, 2, 1, 1, 1, 1, 10)
 
     def test_spectrogram_loading(self):
         spectrograms = self.dataset_loader.load_dataset(
