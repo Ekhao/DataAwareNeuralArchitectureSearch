@@ -1,5 +1,6 @@
 # Data Aware Neural Architecture Search
-![A graphical representation of the relationship between AutoML, Data Aware Neural Architecture Search, and regular Neural Architecture Search](url "a title")
+<img width="1278" alt="A graphical representation of the relationship between Data Aware NAS, AutoML, and regular NAS" src="https://user-images.githubusercontent.com/22741414/212304892-cddd05cc-18ac-42c6-b0f5-9cfc31e2bc77.png">
+
 This is a repository containing a simple Data Aware Neural Architecture Search (Data Aware NAS).
 
 ## Concept
@@ -11,6 +12,7 @@ Similarly, an image can be input into an ML model at different resolutions.
 The number and type of sensors (e.g., mono vs stereo audio) is another example of data granularity.
 
 ## Implementation
+<img width="840" alt="A diagram showing the architecture of the Data Aware NAS implementation. Simply visualises what is written below." src="https://user-images.githubusercontent.com/22741414/212305113-56bc7bab-1ba1-4d94-bb62-4a60e767502d.png">
 The implementation of the Data Aware NAS hosted in this repository uses a Genetic Algorithm to generate combinations of data granularities and neural network architectures.
 To estimate performance, the implementation trains the combination for a configurable amount of epochs to record the accuracy, precision, recall, and model size.
 These metrics are combined for a total score of a combination.
