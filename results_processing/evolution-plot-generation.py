@@ -1,29 +1,30 @@
+# Note that this plot was not used in the Data Aware NAS publication!
 import matplotlib.pyplot as plt
 import math
 import pandas as pd
 import numpy as np
 
 run11 = pd.read_csv(
-    "experiment/results/evolution_exp1_run1.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp1_run1.csv", index_col="Model Number")
 run12 = pd.read_csv(
-    "experiment/results/evolution_exp1_run2.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp1_run2.csv", index_col="Model Number")
 run13 = pd.read_csv(
-    "experiment/results/evolution_exp1_run3.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp1_run3.csv", index_col="Model Number")
 run14 = pd.read_csv(
-    "experiment/results/evolution_exp1_run4.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp1_run4.csv", index_col="Model Number")
 run15 = pd.read_csv(
-    "experiment/results/evolution_exp1_run5.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp1_run5.csv", index_col="Model Number")
 
 run21 = pd.read_csv(
-    "experiment/results/evolution_exp2_run1.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp2_run1.csv", index_col="Model Number")
 run22 = pd.read_csv(
-    "experiment/results/evolution_exp2_run2.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp2_run2.csv", index_col="Model Number")
 run23 = pd.read_csv(
-    "experiment/results/evolution_exp2_run3.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp2_run3.csv", index_col="Model Number")
 run24 = pd.read_csv(
-    "experiment/results/evolution_exp2_run4.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp2_run4.csv", index_col="Model Number")
 run25 = pd.read_csv(
-    "experiment/results/evolution_exp2_run5.csv", index_col="Model Number")
+    "../original_experiment/results/evolution_exp2_run5.csv", index_col="Model Number")
 
 # Calculate their fitness function
 
@@ -95,4 +96,4 @@ ax.set_ylim(0, 4)
 ax.set_xlabel("# of Models Evaluated")
 ax.set_ylabel("Performance Estimation Score")
 ax.legend(loc="lower right")
-plt.savefig(f"figures/evolution-combined.png", format="png")
+plt.savefig(f"../figures/evolution-combined.png", format="png")
