@@ -1,0 +1,87 @@
+{
+    "datanas-config": {
+        "general-config": {
+            "num-models": 10,
+            "seed": null
+        },
+        "joblib-config": {
+            "num-cores-to-use": 1
+        },
+        "search-space-config": {
+            "data-search-space": [
+                [
+                    48000,
+                    24000,
+                    12000,
+                    6000,
+                    3000,
+                    1500,
+                    750,
+                    375
+                ],
+                [
+                    "spectrogram",
+                    "mel-spectrogram",
+                    "mfcc"
+                ]
+            ],
+            "model-layer-search-space": [
+                [
+                    2,
+                    4,
+                    8,
+                    16,
+                    32,
+                    64,
+                    128
+                ],
+                [
+                    "relu",
+                    "sigmoid"
+                ]
+            ]
+        },
+        "model-config": {
+            "optimizer": "adam",
+            "loss": "sparse_categorical_crossentropy",
+            "metrics": [
+                "accuracy"
+            ],
+            "num-output-classes": 2,
+            "width-dense-layer": 10
+        },
+        "dataset-config": {
+            "path-normal-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
+            "path-anomalous-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/",
+            "path-noise-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/EnvironmentalNoise_CNT/",
+            "case-noise-files": "case1",
+            "num-normal-files": 900,
+            "num-anomalous-files": 200,
+            "dataset-channel": 1,
+            "sound-gain": 1,
+            "noise-gain": 1
+        },
+        "preprocessing-config": {
+            "frame-size": 2048,
+            "hop-length": 512,
+            "num-mel-filters": 80,
+            "num-mfccs": 13
+        },
+        "controller-config": {
+            "controller": "evolution",
+            "initialization": "trivial",
+            "max-num-layers": 5
+        },
+        "evaluation-config": {
+            "num-epochs": 20,
+            "batch-size": 32,
+            "approximate-model-size": 100000
+        },
+        "evolutionary-config": {
+            "population-size": 10,
+            "population-update-ratio": 0.5,
+            "crossover-ratio": 0.2
+        },
+        "audio-seconds-to-load": 10
+    }
+}

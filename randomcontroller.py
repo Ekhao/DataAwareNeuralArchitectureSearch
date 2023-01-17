@@ -5,11 +5,10 @@ import random
 
 # Local Imports
 import controller
-import constants
 
 
 class RandomController (controller.Controller):
-    def __init__(self, search_space, seed=None, max_num_layers=constants.MAX_NUM_LAYERS):
+    def __init__(self, search_space, max_num_layers, seed=None):
         super().__init__(search_space)
         random.seed(seed)
         self.seed = seed

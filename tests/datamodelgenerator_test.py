@@ -1,11 +1,9 @@
+# Standard Library Imports
 import unittest
 
+# Local Imports
 import datamodelgenerator
-import randomcontroller
-import constants
 import datamodel
-
-import tensorflow as tf
 
 
 class DataModelGeneratorTestCase(unittest.TestCase):

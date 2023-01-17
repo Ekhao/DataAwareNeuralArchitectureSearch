@@ -2,6 +2,7 @@
 
 # Standard Library Imports
 import argparse
+import json
 
 # Third Party Imports
 import tensorflow as tf
@@ -10,7 +11,6 @@ import tensorflow as tf
 import searchspace
 import datamodelgenerator
 import datasetloader
-import constants
 import randomcontroller
 import evolutionarycontroller
 
@@ -39,13 +39,13 @@ def main():
     # Model Parameters
     argparser.add_argument("-o", "--optimizer",
                            help="The optimizer to use for training the models. Give as a string corresponding to the alias of a TensorFlow optimizer.")
-    argparser.add_argument("-lf", "--loss_function",
+    argparser.add_argument("-l", "--loss",
                            help="The loss function to use for training the models. Give as a string corresponding to the alias of a TensorFlow loss function.")
     argparser.add_argument("-m", "--metrics",
                            help="The metrics to use for training the models. Give as a [\"...\"] formatted list of TensorFlow metric aliases.")
     argparser.add_argument("-no", "--num_output_classes",
                            help="The number of outputs classes that the created models should have.", type=int)
-    argparser.add_argument("-wd", "--width_of_dense_layer",
+    argparser.add_argument("-wd", "--width_dense_layer",
                            help="The width of the dense layer after the convolutional layers in the model. Be aware that this argument can cause an explosion of model parameters.")
 
     # Dataset Parameters
@@ -57,11 +57,11 @@ def main():
                            help="The filepath to the directory containing noise files.")
     argparser.add_argument("-cns", "--case_noise_files",
                            help="The case number to use for noise files.")
-    argparser.add_argument("-nn", "--num_normal_files_to_use",
+    argparser.add_argument("-nn", "--num_normal_files",
                            help="The number of normal files to use for training.", type=int)
-    argparser.add_argument("-na", "--num_anomalous_files_to_use",
+    argparser.add_argument("-na", "--num_anomalous_files",
                            help="The number of anomalous files to use for training.", type=int)
-    argparser.add_argument("-ch", "--dataset_channel_to_use",
+    argparser.add_argument("-ch", "--dataset_channel",
                            help="The dataset channel to use for training.", type=int)
     argparser.add_argument("-sg", "--sound_gain",
                            help="The gain to apply to the sound files.", type=float)
@@ -92,7 +92,7 @@ def main():
     argparser.add_argument("-bs", "--batch_size",
                            help="The batch size to use for training.", type=int)
     argparser.add_argument(
-        "-msa", "--model_size_approximate_range", type=int)
+        "-ams", "--approximate_model_size", help="An approximate size of the models to be generated. Is used to decide whether a generated model is scored well or poor on its model size.", type=int)
 
     # Evolutionary Parameters
     argparser.add_argument("-ps", "--population_size",
@@ -104,71 +104,86 @@ def main():
 
     args = argparser.parse_args()
 
+    # Parse config file
+    config_file = open("config.json", "r")
+    config = json.load(config_file)
+
+    config = config["datanas-config"]
+    general_config = config["general-config"]
+    joblib_config = config["joblib-config"]
+    search_space_config = config["search-space-config"]
+    model_config = config["model-config"]
+    dataset_config = config["dataset-config"]
+    preprocessing_config = config["preprocessing-config"]
+    controller_config = config["controller-config"]
+    evaluation_config = config["evaluation-config"]
+    evolutionary_config = config["evolutionary-config"]
+
     # Set options according to command line arguments and config file
     if not args.num_models:
-        args.num_models = constants.NUM_MODELS
+        args.num_models = general_config["num-models"]
     if not args.seed:
-        args.seed = constants.SEED
+        args.seed = general_config["seed"]
     if not args.num_cores_to_use:
-        args.num_cores_to_use = constants.NUM_CORES_TO_USE
+        args.num_cores_to_use = joblib_config["num-cores-to-use"]
     if not args.data_search_space:
-        args.data_search_space = constants.DATA_SEARCH_SPACE
+        args.data_search_space = search_space_config["data-search-space"]
     if not args.model_layer_search_space:
-        args.model_layer_search_space = constants.MODEL_LAYER_SEARCH_SPACE
+        args.model_layer_search_space = search_space_config["model-layer-search-space"]
     if not args.optimizer:
-        args.optimizer = constants.OPTIMIZER
-    if not args.loss_function:
-        args.loss_function = constants.LOSS_FUNCTION
+        args.optimizer = model_config["optimizer"]
+    if not args.loss:
+        args.loss = model_config["loss"]
     if not args.metrics:
-        args.metrics = constants.METRICS
+        args.metrics = model_config["metrics"]
     if not args.num_output_classes:
-        args.num_output_classes = constants.NUM_OUTPUT_CLASSES
-    if not args.width_of_dense_layer:
-        args.width_of_dense_layer = constants.WIDTH_OF_DENSE_LAYER
+        args.num_output_classes = model_config["num-output-classes"]
+    if not args.width_dense_layer:
+        args.width_dense_layer = model_config["width-dense-layer"]
     if not args.path_normal_files:
-        args.path_normal_files = constants.PATH_NORMAL_FILES
+        args.path_normal_files = dataset_config["path-normal-files"]
     if not args.path_anomalous_files:
-        args.path_anomalous_files = constants.PATH_ANOMALOUS_FILES
+        args.path_anomalous_files = dataset_config["path-anomalous-files"]
     if not args.path_noise_files:
-        args.path_noise_files = constants.PATH_NOISE_FILES
+        args.path_noise_files = dataset_config["path-noise-files"]
     if not args.case_noise_files:
-        args.case_noise_files = constants.CASE_NOISE_FILES
-    if not args.num_normal_files_to_use:
-        args.num_normal_files_to_use = constants.NUM_NORMAL_FILES_TO_USE
-    if not args.num_anomalous_files_to_use:
-        args.num_anomalous_files_to_use = constants.NUM_ANOMALOUS_FILES_TO_USE
-    if not args.dataset_channel_to_use:
-        args.dataset_channel_to_use = constants.DATASET_CHANNEL_TO_USE
+        args.case_noise_files = dataset_config["case-noise-files"]
+    if not args.num_normal_files:
+        args.num_normal_files = dataset_config["num-normal-files"]
+    if not args.num_anomalous_files:
+        args.num_anomalous_files = dataset_config["num-anomalous-files"]
+    if not args.dataset_channel:
+        args.dataset_channel = dataset_config["dataset-channel"]
     if not args.sound_gain:
-        args.sound_gain = constants.SOUND_GAIN
+        args.sound_gain = dataset_config["sound-gain"]
     if not args.noise_gain:
-        args.noise_gain = constants.NOISE_GAIN
+        args.noise_gain = dataset_config["noise-gain"]
     if not args.frame_size:
-        args.frame_size = constants.FRAME_SIZE
+        args.frame_size = preprocessing_config["frame-size"]
     if not args.hop_length:
-        args.hop_length = constants.HOP_LENGTH
+        args.hop_length = preprocessing_config["hop-length"]
     if not args.num_mel_filters:
-        args.num_mel_filters = constants.NUM_MEL_FILTERS
+        args.num_mel_filters = preprocessing_config["num-mel-filters"]
     if not args.num_mfccs:
-        args.num_mfccs = constants.NUM_MFCCS
+        args.num_mfccs = preprocessing_config["num-mfccs"]
     if not args.controller:
-        args.controller = constants.CONTROLLER
+        args.controller = controller_config["controller"]
     if not args.initialization:
-        args.initialization = constants.INITIALIZATION
+        args.initialization = controller_config["initialization"]
     if not args.max_num_layers:
-        args.max_num_layers = constants.MAX_NUM_LAYERS
+        args.max_num_layers = controller_config["max-num-layers"]
     if not args.num_epochs:
-        args.num_epochs = constants.NUM_EPOCHS
+        args.num_epochs = evaluation_config["num-epochs"]
     if not args.batch_size:
-        args.batch_size = constants.BATCH_SIZE
-    if not args.model_size_approximate_range:
-        args.model_size_approximate_range = constants.MODEL_SIZE_APPROXIMATE_RANGE
+        args.batch_size = evaluation_config["batch-size"]
+    if not args.approximate_model_size:
+        args.approximate_model_size = evaluation_config["approximate-model-size"]
     if not args.population_size:
-        args.population_size = constants.POPULATION_SIZE
+        args.population_size = evolutionary_config["population-size"]
     if not args.population_update_ratio:
-        args.population_update_ratio = constants.POPULATION_UPDATE_RATIO
+        args.population_update_ratio = evolutionary_config["population-update-ratio"]
     if not args.crossover_ratio:
-        args.crossover_ratio = constants.CROSSOVER_RATIO
+        args.crossover_ratio = evolutionary_config["crossover-ratio"]
 
         # The following block of code enables memory growth for the GPU during runtime.
         # It is suspected that this helps avoiding out of memory errors.
@@ -192,20 +207,20 @@ def main():
 
     print("Loading dataset files from persistent storage...")
     dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_anomalous_files, args.path_noise_files, args.case_noise_files,
-                                                 args.num_normal_files_to_use, args.num_anomalous_files_to_use, args.dataset_channel_to_use, args.num_cores_to_use, args.sound_gain, args.noise_gain, constants.AUDIO_SECONDS_TO_LOAD)
+                                                 args.num_normal_files, args.num_anomalous_files, args.dataset_channel, args.num_cores_to_use, args.sound_gain, args.noise_gain, config["audio-seconds-to-load"])
 
     print("Initializing controller...")
     if args.controller == "evolution":
         controller = evolutionarycontroller.EvolutionaryController(
-            search_space, args.population_size, args.max_num_layers, args.population_update_ratio, args.crossover_ratio, args.model_size_approximate_range, args.seed)
+            search_space, args.population_size, args.max_num_layers, args.population_update_ratio, args.crossover_ratio, args.approximate_model_size, args.seed)
         controller.initialize_controller(args.initialization == "trivial")
     else:
         controller = randomcontroller.RandomController(
-            search_space, args.seed, args.max_num_layers)
+            search_space, args.max_num_layers, args.seed)
 
     # Run the Data Aware NAS
     data_model_generator = datamodelgenerator.DataModelGenerator(
-        args.num_output_classes, args.loss_function, controller, dataset_loader, args.optimizer, args.metrics, args.width_of_dense_layer, args.num_epochs, args.batch_size, args.num_normal_files_to_use, args.num_anomalous_files_to_use, args.path_normal_files, args.path_anomalous_files, args.frame_size, args.hop_length, args.num_mel_filters, args.num_mfccs)
+        args.num_output_classes, args.loss, controller, dataset_loader, args.optimizer, args.metrics, args.width_dense_layer, args.num_epochs, args.batch_size, args.num_normal_files, args.num_anomalous_files, args.path_normal_files, args.path_anomalous_files, args.frame_size, args.hop_length, args.num_mel_filters, args.num_mfccs)
     pareto_front = data_model_generator.run_data_nas(args.num_models)
 
     # Print out results
