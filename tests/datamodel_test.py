@@ -1,13 +1,14 @@
+# Standard Library Imports
 import unittest
 import unittest.mock
-
-import datamodel
-
-import searchspace
-import datasetloader
-
-import tensorflow as tf
 import copy
+
+# Third Party Imports
+import tensorflow as tf
+
+# Local Imports
+import datamodel
+import searchspace
 
 
 class DataModelTestCase(unittest.TestCase):

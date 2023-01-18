@@ -1,13 +1,13 @@
+# Standard Library Imports
 import unittest
 import unittest.mock
-
-import evolutionarycontroller
-
-import datamodel
-import searchspace
-
 import copy
 import random
+
+# Local Imports
+import evolutionarycontroller
+import datamodel
+import searchspace
 
 
 class EvolutionaryontrollerTestCase(unittest.TestCase):

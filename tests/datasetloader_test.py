@@ -1,15 +1,19 @@
+# Standard Library Imports
 import unittest
+import json  # Loaded to get the dataset path from configuration file.
 
+# Local Imports
 import datasetloader
-
-# The "constants" module is only used for the path to test files. The rest of the constants should not be used in the test cases to not get failed test cases when changing the configuration.
-import constants
 
 
 class DatasetLoaderTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.dataset_loader = datasetloader.DatasetLoader(constants.PATH_NORMAL_FILES, constants.PATH_ANOMALOUS_FILES,
-                                                          constants.PATH_NOISE_FILES, "case1", 2, 2, 1, 1, 1, 1, 10)
+        config_file = open("config.json", "r")
+        config = json.load(config_file)
+        config = config["datanas-config"]
+        dataset_config = config["dataset-config"]
+        self.dataset_loader = datasetloader.DatasetLoader(
+            dataset_config["path-normal-files"], dataset_config["path-anomalous-files"], dataset_config["path-noise-files"], "case1", 2, 2, 1, 1, 1, 1, 10)
 
     def test_spectrogram_loading(self):
         spectrograms = self.dataset_loader.load_dataset(
