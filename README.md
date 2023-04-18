@@ -18,4 +18,4 @@ To estimate performance, the implementation trains the combination for a configu
 These metrics are combined for a total score of a combination.
 
 ## Publication
-A paper with a more detailed description of the Data Aware NAS concept and this implementation is currently under review and will be linked here after publication.
+A paper with a more detailed description of the Data Aware NAS concept and this implementation can be found at: [https://doi.org/10.48550/arXiv.2304.01821](https://doi.org/10.48550/arXiv.2304.01821)
