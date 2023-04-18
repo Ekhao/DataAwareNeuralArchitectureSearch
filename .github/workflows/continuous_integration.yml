@@ -33,4 +33,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with unittest
       run: |
-        python -m unittest tests/evolutionarycontroller_test.py tests/datamodel_test.py tests/datamodelgenerator_test.py tests/randomcontroller_test.py tests/searchspace_test.py
+        python -m unittest discover -s "./tests" -t "." -p "*_test.py"
