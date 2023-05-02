@@ -3,10 +3,13 @@
 # Standard Library Imports
 from abc import ABC, abstractmethod
 
+# Local Imports
+from searchspace import SearchSpace
+
 
 class Controller(ABC):
 
-    def __init__(self, search_space) -> None:
+    def __init__(self, search_space: SearchSpace) -> None:
         self.search_space = search_space
 
     @abstractmethod

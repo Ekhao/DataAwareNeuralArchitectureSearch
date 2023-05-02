@@ -41,8 +41,6 @@ def main():
                            help="The optimizer to use for training the models. Give as a string corresponding to the alias of a TensorFlow optimizer.")
     argparser.add_argument("-l", "--loss",
                            help="The loss function to use for training the models. Give as a string corresponding to the alias of a TensorFlow loss function.")
-    argparser.add_argument("-m", "--metrics",
-                           help="The metrics to use for training the models. Give as a [\"...\"] formatted list of TensorFlow metric aliases.")
     argparser.add_argument("-no", "--num_output_classes",
                            help="The number of outputs classes that the created models should have.", type=int)
     argparser.add_argument("-wd", "--width_dense_layer",
@@ -134,8 +132,6 @@ def main():
         args.optimizer = model_config["optimizer"]
     if not args.loss:
         args.loss = model_config["loss"]
-    if not args.metrics:
-        args.metrics = model_config["metrics"]
     if not args.num_output_classes:
         args.num_output_classes = model_config["num-output-classes"]
     if not args.width_dense_layer:
@@ -203,7 +199,7 @@ def main():
 
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
-        args.model_layer_search_space, args.data_search_space)
+        args.data_search_space, args.model_layer_search_space)
 
     print("Loading dataset files from persistent storage...")
     dataset_loader = datasetloader.DatasetLoader(args.path_normal_files, args.path_anomalous_files, args.path_noise_files, args.case_noise_files,
@@ -220,16 +216,14 @@ def main():
 
     # Run the Data Aware NAS
     data_model_generator = datamodelgenerator.DataModelGenerator(
-        args.num_output_classes, args.loss, controller, dataset_loader, args.optimizer, args.metrics, args.width_dense_layer, args.num_epochs, args.batch_size, args.num_normal_files, args.num_anomalous_files, args.path_normal_files, args.path_anomalous_files, args.frame_size, args.hop_length, args.num_mel_filters, args.num_mfccs)
+        args.num_output_classes, args.loss, controller, dataset_loader, args.optimizer, args.width_dense_layer, args.num_epochs, args.batch_size, args.num_normal_files, args.num_anomalous_files, args.path_normal_files, args.path_anomalous_files, args.frame_size, args.hop_length, args.num_mel_filters, args.num_mfccs)
     pareto_front = data_model_generator.run_data_nas(args.num_models)
 
     # Print out results
     print("Models on pareto front: ")
     for data_model in pareto_front:
-        print(search_space.data_decode(
-            data_model.data_configuration))
-        print(search_space.model_decode(
-            data_model.model_configuration))
+        print(data_model.data_configuration)
+        print(data_model.model_configuration)
         print(f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Model Size (in bytes): {data_model.model_size}.")
         print("-"*200)
 

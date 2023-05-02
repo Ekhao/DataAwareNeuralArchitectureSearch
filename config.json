@@ -5,7 +5,7 @@
             "seed": null
         },
         "joblib-config": {
-            "num-cores-to-use": 1
+            "num-cores-to-use": -1
         },
         "search-space-config": {
             "data-search-space": [
@@ -47,10 +47,7 @@
         },
         "model-config": {
             "optimizer": "adam",
-            "loss": "sparse_categorical_crossentropy",
-            "metrics": [
-                "accuracy"
-            ],
+            "loss": "categorical_crossentropy",
             "num-output-classes": 2,
             "width-dense-layer": 10
         },

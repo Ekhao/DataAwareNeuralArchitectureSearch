@@ -14,13 +14,12 @@ import datasetloader
 
 
 class DataModelGenerator:
-    def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer, metrics, width_dense_layer, num_epochs, batch_size, number_of_normal_files, number_of_anomalous_files, path_to_normal_files, path_to_anomalous_files, frame_size, hop_length, num_mel_banks, num_mfccs):
+    def __init__(self, num_target_classes, loss_function, controller, dataset_loader: datasetloader.DatasetLoader, optimizer, width_dense_layer, num_epochs, batch_size, number_of_normal_files, number_of_anomalous_files, path_to_normal_files, path_to_anomalous_files, frame_size, hop_length, num_mel_banks, num_mfccs):
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
         self.controller = controller
         self.search_space = controller.search_space
         self.optimizer = optimizer
-        self.metrics = metrics
         self.width_dense_layer = width_dense_layer
         self.dataset_loader = dataset_loader
         self.num_epochs = num_epochs
@@ -58,17 +57,17 @@ class DataModelGenerator:
             data_configuration, model_configuration = self.controller.generate_configuration()
 
             print(
-                f"Data configuration: {self.search_space.data_decode(data_configuration)}\nModel configuration: {self.search_space.model_decode(model_configuration)}")
+                f"Data configuration: {data_configuration}\nModel configuration: {model_configuration}")
 
             print("Creating data and model from configuration...")
             if data_configuration != previous_data_configuration:
                 # Create data and model from configuration
                 data_model = datamodel.DataModel.from_data_configuration(data_configuration, model_configuration, self.search_space, self.
-                                                                         dataset_loader, self.frame_size, self.hop_length, self.num_mel_banks, self.num_mfccs, self.num_target_classes, self.optimizer, self.loss_function, self.metrics, self.width_dense_layer, self.seed)
+                                                                         dataset_loader, self.frame_size, self.hop_length, self.num_mel_banks, self.num_mfccs, self.num_target_classes, self.optimizer, self.loss_function, self.width_dense_layer, self.seed)
             else:
                 # Use previous data and create model from configuration
                 data_model = datamodel.DataModel.from_preloaded_data(previous_data, self.number_of_normal_files,
-                                                                     self.number_of_anomalous_files, data_configuration, model_configuration, self.search_space, self.num_target_classes, self.optimizer, self.model_loss_function, model_metrics=self.metrics, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
+                                                                     self.number_of_anomalous_files, data_configuration, model_configuration, self.search_space, self.num_target_classes, self.optimizer, self.loss_function, model_width_dense_layer=self.width_dense_layer, seed=self.seed)
 
             # Some data and model configurations are infeasible. In this case the model created in the data model will be None.
             # If we create an infeasible datamodel we simply skip to proposing the next model
@@ -106,8 +105,8 @@ class DataModelGenerator:
     def _save_to_csv(self, csv_log_name, model_number, data_model):
         with open(csv_log_name, "a", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([model_number, self.search_space.data_decode(
-                data_model.data_configuration), self.search_space.model_decode(data_model.model_configuration), data_model.accuracy, data_model.precision, data_model.recall, data_model.model_size])
+            writer.writerow([model_number, data_model.data_configuration, data_model.model_configuration,
+                            data_model.accuracy, data_model.precision, data_model.recall, data_model.model_size])
 
     # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
 

@@ -13,16 +13,16 @@ import searchspace
 
 class DataModelTestCase(unittest.TestCase):
     def test_data_model_constructor(self):
-        search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
-            3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space = searchspace.SearchSpace([[48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]], [[2,   4, 8, 16, 32, 64, 128], [
+            3, 5], ["relu", "sigmoid"]])
         # To keep these tests separate from the dataset we use a mock object as the dataset loader.
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        data_model = datamodel.DataModel.from_data_configuration(data_configuration=3, model_configuration=[10, 5, 3],
-                                                                 search_space=search_space, dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=52)
+        data_model = datamodel.DataModel.from_data_configuration(data_configuration=(12000, "spectrogram"), model_configuration=[(16, 3, "relu"), (8, 5, "sigmoid"), (4, 3, "relu")],
+                                                                 search_space=search_space, dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),  model_width_dense_layer=10, seed=52)
         self.assertTrue(isinstance(
             data_model.model, tf.keras.Model))
 
@@ -69,15 +69,15 @@ class DataModelTestCase(unittest.TestCase):
         self.assertTrue(data_model2.better_data_model(data_model1))
 
     def test_evaluate_model_size(self):
-        search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
-            3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space = searchspace.SearchSpace([[48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]], [[2,   4, 8, 16, 32, 64, 128], [
+            3, 5], ["relu", "sigmoid"]])
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        data_model = datamodel.DataModel.from_data_configuration(data_configuration=3, model_configuration=[10, 5, 3],
-                                                                 search_space=search_space, dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=20)
+        data_model = datamodel.DataModel.from_data_configuration(data_configuration=(24000, "spectrogram"), model_configuration=[(8, 5, "relu"), (4, 3, "sigmoid"), (2, 5, "sigmoid")],
+                                                                 search_space=search_space, dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_width_dense_layer=10, seed=20)
 
         model_size_without_training = data_model._evaluate_model_size()
 
@@ -86,15 +86,15 @@ class DataModelTestCase(unittest.TestCase):
             model_size_without_training, 16615324, places=-4)
 
     def test_evaluate_model_size2(self):
-        search_space = searchspace.SearchSpace(([2,   4, 8, 16, 32, 64, 128], [
-            3, 5], ["relu", "sigmoid"]), ([48000, 24000, 12000, 6000, 3000, 1500, 750, 325], ["spectrogram", "mel-spectrogram", "mfcc"]))
+        search_space = searchspace.SearchSpace([[48000, 24000, 12000, 6000, 3000, 1500, 750, 325], [
+                                               "spectrogram", "mel-spectrogram", "mfcc"]], [[2,   4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]])
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
             return_value=([None, None], [None, None]))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=[[tf.random.uniform((60, 79, 60, 60))]])
-        data_model = datamodel.DataModel.from_data_configuration(data_configuration=20, model_configuration=[1], search_space=search_space,
-                                                                 dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(), model_metrics=["accuracy"],  model_width_dense_layer=10, seed=20)
+        data_model = datamodel.DataModel.from_data_configuration(data_configuration=(750, "mfcc"), model_configuration=[(2, 3, "sigmoid")], search_space=search_space,
+                                                                 dataset_loader=dataset_loader, frame_size=2048, hop_length=512, num_mel_banks=80, num_mfccs=13, num_target_classes=2, model_optimizer=tf.keras.optimizers.Adam(),  model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),  model_width_dense_layer=10, seed=20)
         model_size_without_training = data_model._evaluate_model_size()
 
         self.assertAlmostEqual(
