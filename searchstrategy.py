@@ -1,4 +1,4 @@
-# A base class for a controller - also known as a search strategy for the Data Aware Neural Architecture Search. Used as a template for creating other controllers.
+# A base class for a search strategies for the Data Aware Neural Architecture Search. Used as a template for creating other search strategies.
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
@@ -11,7 +11,7 @@ from datamodel import DataModel
 Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
 
 
-class Controller(ABC):
+class SearchStrategy(ABC):
     def __init__(self, search_space: SearchSpace, seed: Optional[int] = None) -> None:
         self.search_space = search_space
         self.seed = seed
