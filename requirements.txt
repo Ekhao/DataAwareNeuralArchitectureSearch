@@ -3,3 +3,4 @@ joblib
 librosa
 scikit-learn
 tensorflow
+resampy
