@@ -10,7 +10,7 @@ import tensorflow as tf
 # Local Imports
 import searchspace
 import datamodelgenerator
-import datasetloader
+import toyconveyordatasetloader
 import randomsearchstrategy
 import evolutionarysearchstrategy
 
@@ -79,6 +79,11 @@ def main():
     )
 
     # Dataset Parameters
+    argparser.add_argument(
+        "-dn",
+        "--dataset_name",
+        help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined.",
+    )
     argparser.add_argument(
         "-n",
         "--path_normal_files",
@@ -235,6 +240,8 @@ def main():
         args.num_output_classes = model_config["num-output-classes"]
     if not args.width_dense_layer:
         args.width_dense_layer = model_config["width-dense-layer"]
+    if not args.dataset_name:
+        args.dataset_name = dataset_config["dataset-name"]
     if not args.path_normal_files:
         args.path_normal_files = dataset_config["path-normal-files"]
     if not args.path_anomalous_files:
@@ -301,19 +308,22 @@ def main():
     )
 
     print("Loading dataset files from persistent storage...")
-    dataset_loader = datasetloader.DatasetLoader(
-        args.path_normal_files,
-        args.path_anomalous_files,
-        args.path_noise_files,
-        args.case_noise_files,
-        args.num_normal_files,
-        args.num_anomalous_files,
-        args.dataset_channel,
-        args.num_cores_to_use,
-        args.sound_gain,
-        args.noise_gain,
-        config["audio-seconds-to-load"],
-    )
+    if args.dataset_name == "ToyConveyor":
+        dataset_loader = toyconveyordatasetloader.ToyConveyorDatasetLoader(
+            args.path_normal_files,
+            args.path_anomalous_files,
+            args.path_noise_files,
+            args.case_noise_files,
+            args.num_normal_files,
+            args.num_anomalous_files,
+            args.dataset_channel,
+            args.num_cores_to_use,
+            args.sound_gain,
+            args.noise_gain,
+            config["audio-seconds-to-load"],
+        )
+    else:
+        raise ValueError(f'No dataset loader defined for "{args.dataset_name}".')
 
     print("Initializing search strategy...")
     if args.search_strategy == "evolution":
@@ -327,10 +337,12 @@ def main():
             args.seed,
         )
         search_strategy.initialize_search_strategy(args.initialization == "trivial")
-    else:
+    elif args.search_strategy == "random":
         search_strategy = randomsearchstrategy.RandomSearchStrategy(
             search_space, args.max_num_layers, args.seed
         )
+    else:
+        raise ValueError(f'No "{args.search_strategy}" defined".')
 
     # Run the Data Aware NAS
     data_model_generator = datamodelgenerator.DataModelGenerator(

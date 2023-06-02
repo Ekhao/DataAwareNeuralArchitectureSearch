@@ -144,8 +144,8 @@ class DataModel:
         num_mfccs: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         normal_preprocessed, anomalous_preprocessed = dataset_loader.load_dataset(
-            data_configuration[0],
-            data_configuration[1],
+            target_sr=data_configuration[0],
+            preprocessing_type=data_configuration[1],
             frame_size=frame_size,
             hop_length=hop_length,
             num_mel_banks=num_mel_banks,

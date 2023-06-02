@@ -52,6 +52,7 @@
             "width-dense-layer": 10
         },
         "dataset-config": {
+            "dataset-name": "ToyConveyor",
             "path-normal-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
             "path-anomalous-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/",
             "path-noise-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/EnvironmentalNoise_CNT/",
