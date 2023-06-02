@@ -12,7 +12,7 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
         config = json.load(config_file)
         config = config["datanas-config"]
         dataset_config = config["dataset-config"]
-        self.dataset_loader = toyconveyordatasetloader.ToyAdmosDatasetLoader(
+        self.dataset_loader = toyconveyordatasetloader.ToyConveyorDatasetLoader(
             dataset_config["path-normal-files"],
             dataset_config["path-anomalous-files"],
             dataset_config["path-noise-files"],
