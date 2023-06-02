@@ -1,4 +1,4 @@
-# A class that implements a controller (search strategy) based on evolutionary algorithms.
+# A class that implements a search strategy based on evolutionary algorithms.
 
 # Standard Library Imports
 import random
@@ -10,7 +10,7 @@ from typing import Optional, Any
 import numpy as np
 
 # Local Imports
-import controller
+import searchstrategy
 from searchspace import SearchSpace
 from datamodel import DataModel
 
@@ -19,7 +19,7 @@ Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
 Individual = tuple[DataModel, float]
 
 
-class EvolutionaryController(controller.Controller):
+class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
     def __init__(
         self,
@@ -44,7 +44,7 @@ class EvolutionaryController(controller.Controller):
             1, round(population_size * population_update_ratio)
         )
 
-    def initialize_controller(self, trivial_initialization: bool = True) -> None:
+    def initialize_search_strategy(self, trivial_initialization: bool = True) -> None:
         # A paper (Kenneth O Stanley, Jeff Clune, Joel Lehman, and Risto Miikkulainen. 2019. Designing neural networks through neuroevolution. Nature Machine Intelligence 1, 1 (2019), 24–35.) claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
         self.trivial_initialization = trivial_initialization
         if trivial_initialization:
@@ -117,7 +117,7 @@ class EvolutionaryController(controller.Controller):
     def _generate_new_unevaluated_configurations(self) -> None:
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
         if not self.population:
-            self.initialize_controller(self.trivial_initialization)
+            self.initialize_search_strategy(self.trivial_initialization)
             return
         # Use tournament selection to decide which population to breed
         breeders = self._tournament_selection()

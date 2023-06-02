@@ -1,18 +1,18 @@
-# A class that implements a completely random controller (search strategy).
+# A class that implements a completely random search strategy.
 
 # Standard Library Imports
 import random
 from typing import Optional, Any
 
 # Local Imports
-import controller
+import searchstrategy
 from searchspace import SearchSpace
 from datamodel import DataModel
 
 Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
 
 
-class RandomController(controller.Controller):
+class RandomSearchStrategy(searchstrategy.SearchStrategy):
     def __init__(
         self, search_space: SearchSpace, max_num_layers: int, seed: Optional[int] = None
     ) -> None:
@@ -38,5 +38,5 @@ class RandomController(controller.Controller):
         return (data_configuration, model_layer_configuration)
 
     def update_parameters(self, data_model: DataModel):
-        # The random controller does not have any parameters that should be updated
+        # The random search strategy does not have any parameters that should be updated
         pass

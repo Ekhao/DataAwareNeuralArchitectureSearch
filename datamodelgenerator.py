@@ -1,4 +1,4 @@
-# This file contains the DataModelGenerator class which contains the main logic for the data aware neural architecture search. The DataModelGenerator class is responsible for making the controller create new configurations, creating data models according to those configurations, evaluating the data models and update the parameters of the controller according to this evaluation. Also saves the pareto frontier of data models.
+# This file contains the DataModelGenerator class which contains the main logic for the data aware neural architecture search. The DataModelGenerator class is responsible for making the search strategy create new configurations, creating data models according to those configurations, evaluating the data models and update the parameters of the search strategy according to this evaluation. Also saves the pareto frontier of data models.
 
 # Standard Library Imports
 import csv
@@ -12,7 +12,7 @@ import tensorflow as tf
 # Local Imports
 import datamodel
 import datasetloader
-from controller import Controller
+from searchstrategy import SearchStrategy
 from datamodel import DataModel
 
 
@@ -21,7 +21,7 @@ class DataModelGenerator:
         self,
         num_target_classes: int,
         loss_function: tf.keras.losses.Loss,
-        controller: Controller,
+        search_strategy: SearchStrategy,
         dataset_loader: datasetloader.DatasetLoader,
         optimizer: tf.keras.optimizers.Optimizer,
         width_dense_layer: int,
@@ -36,8 +36,8 @@ class DataModelGenerator:
     ) -> None:
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
-        self.controller = controller
-        self.search_space = controller.search_space
+        self.search_strategy = search_strategy
+        self.search_space = search_strategy.search_space
         self.optimizer = optimizer
         self.width_dense_layer = width_dense_layer
         self.dataset_loader = dataset_loader
@@ -49,7 +49,7 @@ class DataModelGenerator:
         self.hop_length = hop_length
         self.num_mel_banks = num_mel_banks
         self.num_mfccs = num_mfccs
-        self.seed = controller.seed
+        self.seed = search_strategy.seed
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
         pareto_optimal_models = []
@@ -78,12 +78,12 @@ class DataModelGenerator:
             print("-" * 100)
             print(f"Starting model number {model_number}")
 
-            # Get configuration from controller
+            # Get configuration from search strategy
             print("Generating model configuration...")
             (
                 data_configuration,
                 model_configuration,
-            ) = self.controller.generate_configuration()
+            ) = self.search_strategy.generate_configuration()
 
             print(
                 f"Data configuration: {data_configuration}\nModel configuration: {model_configuration}"
@@ -141,9 +141,9 @@ class DataModelGenerator:
                 f"Model{model_number} metrics:\nAccuracy: {data_model.accuracy}\nPrecision: {data_model.precision}\nRecall: {data_model.recall}\nModel Size (bytes): {data_model.model_size}"
             )
 
-            print("Updating parameters of the controller...")
-            # Update controller parameters
-            self.controller.update_parameters(data_model)
+            print("Updating parameters of the search strategy...")
+            # Update search strategy parameters
+            self.search_strategy.update_parameters(data_model)
 
             print("Freeing loaded data and model to reduce memory consumption...")
             previous_data_configuration = data_model.data_configuration

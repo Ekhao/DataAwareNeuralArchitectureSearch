@@ -68,8 +68,8 @@
             "num-mel-filters": 80,
             "num-mfccs": 13
         },
-        "controller-config": {
-            "controller": "evolution",
+        "search-strategy-config": {
+            "search-strategy": "evolution",
             "initialization": "trivial",
             "max-num-layers": 5
         },
