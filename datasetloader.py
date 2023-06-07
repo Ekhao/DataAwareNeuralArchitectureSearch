@@ -20,3 +20,6 @@ class DatasetLoader(ABC):
 
     def load_dataset(self, **kwargs: Any) -> tuple[list, ...]:
         pass
+
+    def num_samples_per_class(self) -> dict[int, int]:
+        pass

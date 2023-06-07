@@ -101,6 +101,11 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             for audio, noise in anomalous_noise_zip  # type: ignore - same reason as above
         )
 
+        self.num_samples_per_class = {
+            0: len(self.base_normal_audio),
+            1: len(self.base_anomalous_audio),
+        }
+
     def supervised_dataset(
         self, *data: list[float], test_size: float = 0.2
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -237,6 +242,9 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 raise NotImplementedError(
                     "This dataloader only supports loading audio as spectrograms, mel-spectrograms and mfccs."
                 )
+
+    def num_samples_per_class(self) -> dict[int, int]:
+        return self.num_samples_per_class
 
     def _librosa_load_without_sample_rate(
         self, file: str, sr: float, duration: float

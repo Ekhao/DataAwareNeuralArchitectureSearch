@@ -27,12 +27,7 @@ class DataModelGenerator:
         width_dense_layer: int,
         num_epochs: int,
         batch_size: int,
-        number_of_normal_files: int,
-        number_of_anomalous_files: int,
-        frame_size: int,
-        hop_length: int,
-        num_mel_banks: int,
-        num_mfccs: int,
+        **data_options,
     ) -> None:
         self.num_target_classes = num_target_classes
         self.loss_function = loss_function
@@ -43,12 +38,7 @@ class DataModelGenerator:
         self.dataset_loader = dataset_loader
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.number_of_normal_files = number_of_normal_files
-        self.number_of_anomalous_files = number_of_anomalous_files
-        self.frame_size = frame_size
-        self.hop_length = hop_length
-        self.num_mel_banks = num_mel_banks
-        self.num_mfccs = num_mfccs
+        self.data_options = data_options
         self.seed = search_strategy.seed
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
@@ -111,8 +101,7 @@ class DataModelGenerator:
                 # Use previous data and create model from configuration
                 data_model = datamodel.DataModel.from_preloaded_data(
                     previous_data,
-                    self.number_of_normal_files,
-                    self.number_of_anomalous_files,
+                    self.dataset_loader.num_samples_per_class(),
                     data_configuration,
                     model_configuration,
                     self.search_space,
