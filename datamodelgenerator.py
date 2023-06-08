@@ -85,17 +85,13 @@ class DataModelGenerator:
                 data_model = datamodel.DataModel.from_data_configuration(
                     data_configuration,
                     model_configuration,
-                    self.search_space,
                     self.dataset_loader,
-                    self.frame_size,
-                    self.hop_length,
-                    self.num_mel_banks,
-                    self.num_mfccs,
                     self.num_target_classes,
                     self.optimizer,
                     self.loss_function,
                     self.width_dense_layer,
                     self.seed,
+                    **self.data_options,
                 )
             elif previous_data != None:
                 # Use previous data and create model from configuration
@@ -104,7 +100,6 @@ class DataModelGenerator:
                     self.dataset_loader.num_samples_per_class(),
                     data_configuration,
                     model_configuration,
-                    self.search_space,
                     self.num_target_classes,
                     self.optimizer,
                     self.loss_function,

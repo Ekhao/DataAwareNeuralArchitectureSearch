@@ -21,32 +21,49 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
     # There are 1800 normal files and 400 anomalous files (in channel 1)
     def __init__(
         self,
-        path_normal_files: str,
-        path_anomalous_files: str,
-        path_noise_files: str,
-        case_noise_files: str,
-        num_normal_files: int,
-        num_anomalous_files: int,
-        channel: int,
+        file_path: str,
+        num_files: list[int],
+        dataset_options: dict[str, str],
         num_cores_to_use: int,
-        sound_gain: float,
-        noise_gain: float,
-        duration_to_load: float,
     ) -> None:
         self.num_cores_to_use = num_cores_to_use
 
+        # If no case is specified, use case1
+        if dataset_options.get("case") == None:
+            dataset_options["case"] = "case1"
+
+        # If no channel is specified, use channel 1
+        if dataset_options.get("channel") == None:
+            dataset_options["channel"] = "1"
+
+        # If no audio-seconds-to-load is specified, use 10 seconds
+        if dataset_options.get("audio_seconds_to_load") == None:
+            dataset_options["audio_seconds_to_load"] = 10
+
+        # If no sound gain is specified, use 1
+        if dataset_options.get("sound_gain") == None:
+            dataset_options["sound_gain"] = 1
+
+        # If no noise gain is specified, use 1
+        if dataset_options.get("noise_gain") == None:
+            dataset_options["noise_gain"] = 1
+
         # Find all files in the requested channel directory
-        normal_files = tf.io.gfile.glob(f"{path_normal_files}*ch{channel}*.wav")
-        anomalous_files = tf.io.gfile.glob(f"{path_anomalous_files}*ch{channel}*.wav")
+        normal_files = tf.io.gfile.glob(
+            f"{file_path}/{dataset_options.get('case')}/NormalSound_IND/*ch{dataset_options.get('channel')}*.wav"
+        )
+        anomalous_files = tf.io.gfile.glob(
+            f"{file_path}/{dataset_options.get('case')}/AnomalousSound_IND/*ch{dataset_options.get('channel')}*.wav"
+        )
         noise_files = tf.io.gfile.glob(
-            f"{path_noise_files}*{case_noise_files}*ch{channel}*.wav"
+            f"{file_path}/EnvironmentalNoise_CNT/*{dataset_options.get('case')}*ch{dataset_options.get('channel')}*.wav"
         )
 
         # Cut the amount of processed files according to the program parameters
-        normal_files = normal_files[:num_normal_files]
-        anomalous_files = anomalous_files[:num_anomalous_files]
+        normal_files = normal_files[: num_files[0]]
+        anomalous_files = anomalous_files[: num_files[1]]
         # We should have as many noise files as the sum of normal and anomalous files
-        noise_files = noise_files[: num_normal_files + num_anomalous_files]
+        noise_files = noise_files[: num_files[0] + num_files[1]]
 
         # Get the sample rate of the audio files. The sample rate is assumed to be the same for every file.
         self.base_sr = librosa.get_samplerate(normal_files[0])
@@ -54,19 +71,19 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         # Load the audio files using librosa. Use multiple python processes in order to speed up loading.
         base_normal_audio = Parallel(n_jobs=self.num_cores_to_use)(
             delayed(self._librosa_load_without_sample_rate)(
-                file, self.base_sr, duration_to_load
+                file, self.base_sr, dataset_options.get("audio_seconds_to_load")
             )
             for file in normal_files
         )
         base_anomalous_audio = Parallel(n_jobs=self.num_cores_to_use)(
             delayed(self._librosa_load_without_sample_rate)(
-                file, self.base_sr, duration_to_load
+                file, self.base_sr, dataset_options.get("audio_seconds_to_load")
             )
             for file in anomalous_files
         )
         base_noise_audio = Parallel(n_jobs=self.num_cores_to_use)(
             delayed(self._librosa_load_without_sample_rate)(
-                file, self.base_sr, duration_to_load
+                file, self.base_sr, dataset_options.get("audio_seconds_to_load")
             )
             for file in noise_files
         )
@@ -86,28 +103,38 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         base_noise_audio = base_noise_audio * math.ceil(num_duplicates)
 
         # Mix noise into the other audio files.
-        normal_noise_audio = base_noise_audio[:num_normal_files]
-        anomalous_noise_audio = base_noise_audio[num_normal_files:]
+        normal_noise_audio = base_noise_audio[: num_files[0]]
+        anomalous_noise_audio = base_noise_audio[num_files[1]]
 
         normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
         anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)
 
         self.base_normal_audio = Parallel(n_jobs=self.num_cores_to_use)(
-            delayed(self._mix_audio)(audio, sound_gain, noise, noise_gain)
+            delayed(self._mix_audio)(
+                audio,
+                dataset_options.get("sound_gain"),
+                noise,
+                dataset_options.get("noise_gain"),
+            )
             for audio, noise in normal_noise_zip  # type: ignore - to my understanding a for loop should take an iterator which zip is, not require an interable.
         )
         self.base_anomalous_audio = Parallel(n_jobs=self.num_cores_to_use)(
-            delayed(self._mix_audio)(audio, sound_gain, noise, noise_gain)
+            delayed(self._mix_audio)(
+                audio,
+                dataset_options.get("sound_gain"),
+                noise,
+                dataset_options.get("noise_gain"),
+            )
             for audio, noise in anomalous_noise_zip  # type: ignore - same reason as above
         )
 
-        self.num_samples_per_class = {
+        self.num_samples_per_class_dict = {
             0: len(self.base_normal_audio),
             1: len(self.base_anomalous_audio),
         }
 
     def supervised_dataset(
-        self, *data: list[float], test_size: float = 0.2
+        self, data: tuple[list, ...], test_size: float = 0.2
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         i = 0
         y = []
@@ -131,6 +158,16 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
     ) -> tuple[list, list]:
         if (self.base_normal_audio is None) or (self.base_anomalous_audio is None):
             raise TypeError("The base audio files were not loaded correctly.")
+
+        # Check that the frame_size, hop_length, num_mel_filters and num_mfccs are specified.
+        if kwargs.get("frame_size") is None:
+            raise ValueError(
+                "The frame_size option must be specified for the toyconveyor dataset."
+            )
+        if kwargs.get("hop_length") is None:
+            raise ValueError(
+                "The hop_length option must be specified for the toyconveyor dataset."
+            )
 
         normal_audio = copy.deepcopy(self.base_normal_audio)
         anomalous_audio = copy.deepcopy(self.base_anomalous_audio)
@@ -167,13 +204,13 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             case "spectrogram":
                 normal_spectogram = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_spectrogram)(
-                        audio, kwargs["frame_size"], kwargs["hop_length"]
+                        audio, kwargs.get("frame_size"), kwargs.get("hop_length")
                     )
                     for audio in normal_audio
                 )
                 anomalous_spectrograms = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_spectrogram)(
-                        audio, kwargs["frame_size"], kwargs["hop_length"]
+                        audio, kwargs.get("frame_size"), kwargs.get("hop_length")
                     )
                     for audio in anomalous_audio
                 )
@@ -182,24 +219,24 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                     raise TypeError("Creating spectrograms failed.")
 
                 return (normal_spectogram, anomalous_spectrograms)
-            case "mel-spectrogram":
+            case "mel_spectrogram":
                 normal_mel_spectogram = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs["target_sr"],
-                        kwargs["frame_size"],
-                        kwargs["hop_length"],
-                        kwargs["num_mel_banks"],
+                        kwargs.get("target_sr"),
+                        kwargs.get("frame_size"),
+                        kwargs.get("hop_length"),
+                        kwargs.get("num_mel_filters"),
                     )
                     for audio in normal_audio
                 )
                 anomalous_mel_spectrograms = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs["target_sr"],
-                        kwargs["frame_size"],
-                        kwargs["hop_length"],
-                        kwargs["num_mel_banks"],
+                        kwargs.get("target_sr"),
+                        kwargs.get("frame_size"),
+                        kwargs.get("hop_length"),
+                        kwargs.get("num_mel_filters"),
                     )
                     for audio in anomalous_audio
                 )
@@ -214,22 +251,22 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 normal_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs["target_sr"],
-                        kwargs["frame_size"],
-                        kwargs["hop_length"],
-                        kwargs["num_mel_banks"],
-                        kwargs["num_mfccs"],
+                        kwargs.get("target_sr"),
+                        kwargs.get("frame_size"),
+                        kwargs.get("hop_length"),
+                        kwargs.get("num_mel_filters"),
+                        kwargs.get("num_mfccs"),
                     )
                     for audio in normal_audio
                 )
                 anomalous_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs["target_sr"],
-                        kwargs["frame_size"],
-                        kwargs["hop_length"],
-                        kwargs["num_mel_banks"],
-                        kwargs["num_mfccs"],
+                        kwargs.get("target_sr"),
+                        kwargs.get("frame_size"),
+                        kwargs.get("hop_length"),
+                        kwargs.get("num_mel_filters"),
+                        kwargs.get("num_mfccs"),
                     )
                     for audio in anomalous_audio
                 )
@@ -240,11 +277,11 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 return (normal_mfccs, anomalous_mfccs)
             case _:
                 raise NotImplementedError(
-                    "This dataloader only supports loading audio as spectrograms, mel-spectrograms and mfccs."
+                    "This dataloader only supports loading audio as spectrograms, mel_spectrograms and mfccs."
                 )
 
     def num_samples_per_class(self) -> dict[int, int]:
-        return self.num_samples_per_class
+        return self.num_samples_per_class_dict
 
     def _librosa_load_without_sample_rate(
         self, file: str, sr: float, duration: float
@@ -276,8 +313,13 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         sample_rate: float,
         frame_size: int,
         hop_length: int,
-        num_mel_banks: int,
+        num_mel_filters: int,
     ) -> np.ndarray:
+        # Check that the num_mel_filters is not None
+        if num_mel_filters is None:
+            raise ValueError(
+                "The number of mel filters must be specified when creating a mel spectrogram."
+            )
         # Unlike for the spectrogram, the mel spectrogram has a directly accessible function in librosa.
         return librosa.power_to_db(
             librosa.feature.melspectrogram(
@@ -285,7 +327,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 sr=sample_rate,
                 n_fft=frame_size,
                 hop_length=hop_length,
-                n_mels=num_mel_banks,
+                n_mels=num_mel_filters,
             )
         )[..., tf.newaxis]
 
@@ -295,9 +337,18 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         sample_rate: float,
         frame_size: int,
         hop_length: int,
-        num_mel_banks: int,
+        num_mel_filters: int,
         num_mfccs: int,
     ) -> np.ndarray:
+        # Check that the num_mel_filters and num_mfccs is not None
+        if num_mel_filters is None:
+            raise ValueError(
+                "The number of mel filters must be specified when creating a mfcc."
+            )
+        if num_mfccs is None:
+            raise ValueError(
+                "The number of mfccs must be specified when creating a mfcc."
+            )
         # Maybe also do first and second derivatives - is supposedly improving accuracy
         # Is often not used that much in deep learning, and is made to understand speech and music - not machine sounds.
         mfcc = librosa.feature.mfcc(
@@ -305,7 +356,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             sr=sample_rate,
             n_fft=frame_size,
             hop_length=hop_length,
-            n_mels=num_mel_banks,
+            n_mels=num_mel_filters,
             n_mfcc=num_mfccs,
         )
         delta_mfcc = librosa.feature.delta(mfcc, mode="nearest")

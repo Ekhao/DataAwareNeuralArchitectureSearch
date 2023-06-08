@@ -12,7 +12,6 @@ import numpy as np
 
 # Local Imports
 import datasetloader
-import searchspace
 
 Data = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
@@ -119,10 +118,10 @@ class DataModel:
         dataset = dataset_loader.load_dataset(
             target_sr=data_configuration[0],
             preprocessing_type=data_configuration[1],
-            frame_size=options["frame_size"],
-            hop_length=options["hop_length"],
-            num_mel_banks=options["num_mel_banks"],
-            num_mfccs=options["num_mfccs"],
+            frame_size=options.get("frame_size"),
+            hop_length=options.get("hop_length"),
+            num_mel_filters=options.get("num_mel_filters"),
+            num_mfccs=options.get("num_mfccs"),
         )
 
         return dataset_loader.supervised_dataset(dataset)
@@ -198,11 +197,17 @@ class DataModel:
         y_train = tf.one_hot(y_train, 2)
         y_test = tf.one_hot(y_test, 2)
 
-        total_samples = self.num_normal_samples + self.num_anomalous_samples
-        weight_for_0 = (1 / self.num_normal_samples) * (total_samples / 2.0)
-        weight_for_1 = (1 / self.num_anomalous_samples) * (total_samples / 2.0)
+        total_sample_length = 0
+        for sample_length in self.num_samples_per_class.values():
+            total_sample_length += sample_length
 
-        class_weight = {0: weight_for_0, 1: weight_for_1}
+        class_weight = {}
+        i = 0
+        number_of_classes = len(self.num_samples_per_class)
+        for sample_length in self.num_samples_per_class.values():
+            class_weight[i] = (1 / sample_length) * (
+                total_sample_length / number_of_classes
+            )
 
         self.model.fit(
             x=X_train,

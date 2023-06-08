@@ -23,7 +23,7 @@ def main():
 
     # General Parameters
     argparser.add_argument(
-        "-nm",
+        "-n",
         "--num_models",
         help="The number of models to evaluate before returning the pareto front.",
         type=int,
@@ -45,12 +45,12 @@ def main():
 
     # Search Space Parameters
     argparser.add_argument(
-        "-dss",
+        "-d",
         "--data_search_space",
         help="The search space to use for data preprocessing.",
     )
     argparser.add_argument(
-        "-mlss",
+        "-m",
         "--model_layer_search_space",
         help="The search space to use for model layers.",
     )
@@ -85,66 +85,23 @@ def main():
         help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined.",
     )
     argparser.add_argument(
-        "-n",
-        "--path_normal_files",
-        help="The filepath to the directory containing normal files.",
+        "-f",
+        "--file_path",
+        help="The path to the directory containing the selected dataset.",
     )
     argparser.add_argument(
-        "-a",
-        "--path_anomalous_files",
-        help="The filepath to the directory containing anoamlous files.",
-    )
-    argparser.add_argument(
-        "-ns",
-        "--path_noise_files",
-        help="The filepath to the directory containing noise files.",
-    )
-    argparser.add_argument(
-        "-cns", "--case_noise_files", help="The case number to use for noise files."
-    )
-    argparser.add_argument(
-        "-nn",
-        "--num_normal_files",
-        help="The number of normal files to use for training.",
+        "-nf",
+        "--num_files",
+        nargs="*",
+        help="The number files to use for training. For some datasets this may require multiple values for different type of files.",
         type=int,
     )
     argparser.add_argument(
-        "-na",
-        "--num_anomalous_files",
-        help="The number of anomalous files to use for training.",
-        type=int,
-    )
-    argparser.add_argument(
-        "-ch",
-        "--dataset_channel",
-        help="The dataset channel to use for training.",
-        type=int,
-    )
-    argparser.add_argument(
-        "-sg", "--sound_gain", help="The gain to apply to the sound files.", type=float
-    )
-    argparser.add_argument(
-        "-ng", "--noise_gain", help="The gain to apply to the noise files.", type=float
-    )
-
-    # Audio Preprocessing Parameters
-    argparser.add_argument(
-        "-fs", "--frame_size", help="The frame size to use for preprocessing.", type=int
-    )
-    argparser.add_argument(
-        "-hl", "--hop_length", help="The hop length to use for preprocessing.", type=int
-    )
-    argparser.add_argument(
-        "-nmf",
-        "--num_mel_filters",
-        help="The number of mel filters to use for preprocessing.",
-        type=int,
-    )
-    argparser.add_argument(
-        "-nmfcc",
-        "--num_mfccs",
-        help="The number of mfccs to use for preprocessing.",
-        type=int,
+        "-do",
+        "--dataset_options",
+        nargs="*",
+        help="Additional options for the dataset loader. Format should be option:value.",
+        type=str,
     )
 
     # Search Strategy Parameters
@@ -210,86 +167,74 @@ def main():
     config_file = open("config.json", "r")
     config = json.load(config_file)
 
-    config = config["datanas-config"]
-    general_config = config["general-config"]
-    joblib_config = config["joblib-config"]
-    search_space_config = config["search-space-config"]
-    model_config = config["model-config"]
-    dataset_config = config["dataset-config"]
-    preprocessing_config = config["preprocessing-config"]
-    search_strategy_config = config["search-strategy-config"]
-    evaluation_config = config["evaluation-config"]
-    evolutionary_config = config["evolutionary-config"]
+    config = config["datanas_config"]
+    general_config = config["general_config"]
+    joblib_config = config["joblib_config"]
+    search_space_config = config["search_space_config"]
+    model_config = config["model_config"]
+    dataset_config = config["dataset_config"]
+    search_strategy_config = config["search_strategy_config"]
+    evaluation_config = config["evaluation_config"]
+    evolutionary_config = config["evolutionary_config"]
 
     # Set options according to command line arguments and config file
     if not args.num_models:
-        args.num_models = general_config["num-models"]
+        args.num_models = general_config["num_models"]
     if not args.seed:
         args.seed = general_config["seed"]
     if not args.num_cores_to_use:
-        args.num_cores_to_use = joblib_config["num-cores-to-use"]
+        args.num_cores_to_use = joblib_config["num_cores_to_use"]
     if not args.data_search_space:
-        args.data_search_space = search_space_config["data-search-space"]
+        args.data_search_space = search_space_config["data_search_space"]
     if not args.model_layer_search_space:
-        args.model_layer_search_space = search_space_config["model-layer-search-space"]
+        args.model_layer_search_space = search_space_config["model_layer_search_space"]
     if not args.optimizer:
         args.optimizer = model_config["optimizer"]
     if not args.loss:
         args.loss = model_config["loss"]
     if not args.num_output_classes:
-        args.num_output_classes = model_config["num-output-classes"]
+        args.num_output_classes = model_config["num_output_classes"]
     if not args.width_dense_layer:
-        args.width_dense_layer = model_config["width-dense-layer"]
+        args.width_dense_layer = model_config["width_dense_layer"]
     if not args.dataset_name:
-        args.dataset_name = dataset_config["dataset-name"]
-    if not args.path_normal_files:
-        args.path_normal_files = dataset_config["path-normal-files"]
-    if not args.path_anomalous_files:
-        args.path_anomalous_files = dataset_config["path-anomalous-files"]
-    if not args.path_noise_files:
-        args.path_noise_files = dataset_config["path-noise-files"]
-    if not args.case_noise_files:
-        args.case_noise_files = dataset_config["case-noise-files"]
-    if not args.num_normal_files:
-        args.num_normal_files = dataset_config["num-normal-files"]
-    if not args.num_anomalous_files:
-        args.num_anomalous_files = dataset_config["num-anomalous-files"]
-    if not args.dataset_channel:
-        args.dataset_channel = dataset_config["dataset-channel"]
-    if not args.sound_gain:
-        args.sound_gain = dataset_config["sound-gain"]
-    if not args.noise_gain:
-        args.noise_gain = dataset_config["noise-gain"]
-    if not args.frame_size:
-        args.frame_size = preprocessing_config["frame-size"]
-    if not args.hop_length:
-        args.hop_length = preprocessing_config["hop-length"]
-    if not args.num_mel_filters:
-        args.num_mel_filters = preprocessing_config["num-mel-filters"]
-    if not args.num_mfccs:
-        args.num_mfccs = preprocessing_config["num-mfccs"]
+        args.dataset_name = dataset_config["dataset_name"]
+    if not args.file_path:
+        args.file_path = dataset_config["file_path"]
+    if not args.num_files:
+        args.num_files = dataset_config["num_files"]
+    if not args.dataset_options:
+        args.dataset_options = dataset_config["dataset_options"]
     if not args.search_strategy:
-        args.search_strategy = search_strategy_config["search-strategy"]
+        args.search_strategy = search_strategy_config["search_strategy"]
     if not args.initialization:
         args.initialization = search_strategy_config["initialization"]
     if not args.max_num_layers:
-        args.max_num_layers = search_strategy_config["max-num-layers"]
+        args.max_num_layers = search_strategy_config["max_num_layers"]
     if not args.num_epochs:
-        args.num_epochs = evaluation_config["num-epochs"]
+        args.num_epochs = evaluation_config["num_epochs"]
     if not args.batch_size:
-        args.batch_size = evaluation_config["batch-size"]
+        args.batch_size = evaluation_config["batch_size"]
     if not args.approximate_model_size:
-        args.approximate_model_size = evaluation_config["approximate-model-size"]
+        args.approximate_model_size = evaluation_config["approximate_model_size"]
     if not args.population_size:
-        args.population_size = evolutionary_config["population-size"]
+        args.population_size = evolutionary_config["population_size"]
     if not args.population_update_ratio:
-        args.population_update_ratio = evolutionary_config["population-update-ratio"]
+        args.population_update_ratio = evolutionary_config["population_update_ratio"]
     if not args.crossover_ratio:
-        args.crossover_ratio = evolutionary_config["crossover-ratio"]
+        args.crossover_ratio = evolutionary_config["crossover_ratio"]
 
-        # The following block of code enables memory growth for the GPU during runtime.
-        # It is suspected that this helps avoiding out of memory errors.
-        # https://www.tensorflow.org/guide/gpu
+    # If dataset options have been passed as command line arguments, parse them into a dictionary
+    if isinstance(args.dataset_options, str):
+        temp_dataset_options = {}
+        for option in args.dataset_options:
+            key, value = option.split(":")
+            temp_dataset_options[key] = value
+
+        args.dataset_options = temp_dataset_options
+
+    # The following block of code enables memory growth for the GPU during runtime.
+    # It is suspected that this helps avoiding out of memory errors.
+    # https://www.tensorflow.org/guide/gpu
     gpus = tf.config.list_physical_devices("GPU")
     if gpus:
         try:
@@ -310,17 +255,10 @@ def main():
     print("Loading dataset files from persistent storage...")
     if args.dataset_name == "ToyConveyor":
         dataset_loader = toyconveyordatasetloader.ToyConveyorDatasetLoader(
-            args.path_normal_files,
-            args.path_anomalous_files,
-            args.path_noise_files,
-            args.case_noise_files,
-            args.num_normal_files,
-            args.num_anomalous_files,
-            args.dataset_channel,
+            args.file_path,
+            args.num_files,
+            args.dataset_options,
             args.num_cores_to_use,
-            args.sound_gain,
-            args.noise_gain,
-            config["audio-seconds-to-load"],
         )
     else:
         raise ValueError(f'No dataset loader defined for "{args.dataset_name}".')
@@ -354,12 +292,7 @@ def main():
         args.width_dense_layer,
         args.num_epochs,
         args.batch_size,
-        args.num_normal_files,
-        args.num_anomalous_files,
-        args.frame_size,
-        args.hop_length,
-        args.num_mel_filters,
-        args.num_mfccs,
+        **args.dataset_options,
     )
     pareto_front = data_model_generator.run_data_nas(args.num_models)
 
