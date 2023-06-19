@@ -14,12 +14,12 @@ class DatasetLoader(ABC):
         pass
 
     def supervised_dataset(
-        self, test_size: float, *data: Any
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        self, *data: Any, test_size: float
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
         pass
 
-    def load_dataset(self, **kwargs: Any) -> tuple[list, ...]:
+    def load_dataset(self, **kwargs: Any) -> tuple[list, ...]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
         pass
 
-    def num_samples_per_class(self) -> dict[int, int]:
+    def num_samples_per_class(self) -> dict[int, int]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
         pass

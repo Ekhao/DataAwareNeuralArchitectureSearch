@@ -97,6 +97,12 @@ def main():
         type=int,
     )
     argparser.add_argument(
+        "-ts",
+        "--test_size",
+        help="The percentage of the data to be used for the test set during training. Given on a scale from 0 to 1.",
+        type=float,
+    )
+    argparser.add_argument(
         "-do",
         "--dataset_options",
         nargs="*",
@@ -202,6 +208,8 @@ def main():
         args.file_path = dataset_config["file_path"]
     if not args.num_files:
         args.num_files = dataset_config["num_files"]
+    if not args.test_size:
+        args.test_size = dataset_config["test_size"]
     if not args.dataset_options:
         args.dataset_options = dataset_config["dataset_options"]
     if not args.search_strategy:
@@ -288,6 +296,7 @@ def main():
         args.loss,
         search_strategy,
         dataset_loader,
+        args.test_size,
         args.optimizer,
         args.width_dense_layer,
         args.num_epochs,

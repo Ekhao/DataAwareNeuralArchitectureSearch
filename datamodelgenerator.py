@@ -23,6 +23,7 @@ class DataModelGenerator:
         loss_function: tf.keras.losses.Loss,
         search_strategy: SearchStrategy,
         dataset_loader: datasetloader.DatasetLoader,
+        test_size: float,
         optimizer: tf.keras.optimizers.Optimizer,
         width_dense_layer: int,
         num_epochs: int,
@@ -36,6 +37,7 @@ class DataModelGenerator:
         self.optimizer = optimizer
         self.width_dense_layer = width_dense_layer
         self.dataset_loader = dataset_loader
+        self.test_size = test_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.data_options = data_options
@@ -90,6 +92,7 @@ class DataModelGenerator:
                     self.optimizer,
                     self.loss_function,
                     self.width_dense_layer,
+                    self.test_size,
                     self.seed,
                     **self.data_options,
                 )

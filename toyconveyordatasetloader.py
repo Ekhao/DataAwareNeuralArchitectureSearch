@@ -23,7 +23,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         self,
         file_path: str,
         num_files: list[int],
-        dataset_options: dict[str, str],
+        dataset_options: dict[str, Any],
         num_cores_to_use: int,
     ) -> None:
         self.num_cores_to_use = num_cores_to_use
@@ -129,8 +129,8 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         )
 
         self.num_samples_per_class_dict = {
-            0: len(self.base_normal_audio),
-            1: len(self.base_anomalous_audio),
+            0: len(base_normal_audio),
+            1: len(base_anomalous_audio),
         }
 
     def supervised_dataset(

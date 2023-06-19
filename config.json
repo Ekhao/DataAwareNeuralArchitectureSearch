@@ -58,6 +58,7 @@
                 900,
                 200
             ],
+            "test_size": 0.2,
             "dataset_options": {
                 "channel": 1,
                 "case": "case1",

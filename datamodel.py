@@ -45,12 +45,14 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
+        test_size: float,
         seed: Optional[int] = None,
         **data_options,
     ) -> DataModel:
         data = cls.create_data(
             data_configuration,
             dataset_loader,
+            test_size,
             **data_options,
         )
         # For the data shape we need to subscript the dataset two times.
@@ -113,6 +115,7 @@ class DataModel:
     def create_data(
         data_configuration: tuple[Any, ...],
         dataset_loader: datasetloader.DatasetLoader,
+        test_size: float,
         **options,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         dataset = dataset_loader.load_dataset(
@@ -124,7 +127,7 @@ class DataModel:
             num_mfccs=options.get("num_mfccs"),
         )
 
-        return dataset_loader.supervised_dataset(dataset)
+        return dataset_loader.supervised_dataset(dataset, test_size=test_size)
 
     @staticmethod
     def create_model(
