@@ -1,14 +1,14 @@
 {
-    "datanas-config": {
-        "general-config": {
-            "num-models": 10,
+    "datanas_config": {
+        "general_config": {
+            "num_models": 10,
             "seed": null
         },
-        "joblib-config": {
-            "num-cores-to-use": -1
+        "joblib_config": {
+            "num_cores_to_use": -1
         },
-        "search-space-config": {
-            "data-search-space": [
+        "search_space_config": {
+            "data_search_space": [
                 [
                     48000,
                     24000,
@@ -21,11 +21,11 @@
                 ],
                 [
                     "spectrogram",
-                    "mel-spectrogram",
+                    "mel_spectrogram",
                     "mfcc"
                 ]
             ],
-            "model-layer-search-space": [
+            "model_layer_search_space": [
                 [
                     2,
                     4,
@@ -45,44 +45,46 @@
                 ]
             ]
         },
-        "model-config": {
+        "model_config": {
             "optimizer": "adam",
             "loss": "categorical_crossentropy",
-            "num-output-classes": 2,
-            "width-dense-layer": 10
+            "num_output_classes": 2,
+            "width_dense_layer": 10
         },
-        "dataset-config": {
-            "path-normal-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/NormalSound_IND/",
-            "path-anomalous-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/case1/AnomalousSound_IND/",
-            "path-noise-files": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/EnvironmentalNoise_CNT/",
-            "case-noise-files": "case1",
-            "num-normal-files": 900,
-            "num-anomalous-files": 200,
-            "dataset-channel": 1,
-            "sound-gain": 1,
-            "noise-gain": 1
+        "dataset_config": {
+            "dataset_name": "ToyConveyor",
+            "file_path": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/",
+            "num_files": [
+                900,
+                200
+            ],
+            "test_size": 0.2,
+            "dataset_options": {
+                "channel": 1,
+                "case": "case1",
+                "sound_gain": 1,
+                "noise_gain": 1,
+                "frame_size": 2048,
+                "hop_length": 512,
+                "num_mel_filters": 80,
+                "num_mfccs": 13,
+                "audio_seconds_to_load": 10
+            }
         },
-        "preprocessing-config": {
-            "frame-size": 2048,
-            "hop-length": 512,
-            "num-mel-filters": 80,
-            "num-mfccs": 13
-        },
-        "search-strategy-config": {
-            "search-strategy": "evolution",
+        "search_strategy_config": {
+            "search_strategy": "evolution",
             "initialization": "trivial",
-            "max-num-layers": 5
+            "max_num_layers": 5
         },
-        "evaluation-config": {
-            "num-epochs": 20,
-            "batch-size": 32,
-            "approximate-model-size": 100000
+        "evaluation_config": {
+            "num_epochs": 20,
+            "batch_size": 32,
+            "approximate_model_size": 100000
         },
-        "evolutionary-config": {
-            "population-size": 10,
-            "population-update-ratio": 0.5,
-            "crossover-ratio": 0.2
-        },
-        "audio-seconds-to-load": 10
+        "evolutionary_config": {
+            "population_size": 10,
+            "population_update_ratio": 0.5,
+            "crossover_ratio": 0.2
+        }
     }
 }

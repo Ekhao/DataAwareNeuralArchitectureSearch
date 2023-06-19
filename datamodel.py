@@ -12,21 +12,19 @@ import numpy as np
 
 # Local Imports
 import datasetloader
-import searchspace
 
 Data = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 
 class DataModel:
-    # The primary constructor for the data model class. Assumes that all needed data has already been processed - e.g. data loaded according to data configuration and model created according to model configuration. This constructor likely not used directly.
+    # The primary constructor for the data model class. Assumes that all needed data has already been processed - e.g. data loaded according to data configuration and model created according to model configuration. This constructor is likely not used directly.
     def __init__(
         self,
         data: Data,
         data_configuration: tuple[Any, ...],
         model: tf.keras.Model,
         model_configuration: list[tuple[Any, ...]],
-        num_normal_samples: int,
-        num_anomalous_samples: int,
+        num_samples_per_class: dict[int, int],
         seed=None,
     ) -> None:
         self.data = data
@@ -34,8 +32,7 @@ class DataModel:
         self.model = model
         self.model_configuration = model_configuration
         self.seed = seed
-        self.num_normal_samples = num_normal_samples
-        self.num_anomalous_samples = num_anomalous_samples
+        self.num_samples_per_class = num_samples_per_class
 
     # A constructor to use when both data and model need to be created.
     @classmethod
@@ -43,25 +40,20 @@ class DataModel:
         cls,
         data_configuration: tuple[Any, ...],
         model_configuration: list[tuple[Any, ...]],
-        search_space: searchspace.SearchSpace,
         dataset_loader: datasetloader.DatasetLoader,
-        frame_size: int,
-        hop_length: int,
-        num_mel_banks: int,
-        num_mfccs: int,
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
+        test_size: float,
         seed: Optional[int] = None,
+        **data_options,
     ) -> DataModel:
         data = cls.create_data(
             data_configuration,
             dataset_loader,
-            frame_size,
-            hop_length,
-            num_mel_banks,
-            num_mfccs,
+            test_size,
+            **data_options,
         )
         # For the data shape we need to subscript the dataset two times.
         # First subscript is to choose the training samples (here we could also chose the test samples - doesnt matter)
@@ -75,24 +67,12 @@ class DataModel:
             model_width_dense_layer,
         )
 
-        if (
-            dataset_loader.base_normal_audio is None
-            or dataset_loader.base_anomalous_audio is None
-        ):
-            raise TypeError(
-                "The dataset loader does not contain the base audio files. Please load the dataset first."
-            )
-
-        num_normal_samples = len(dataset_loader.base_normal_audio)
-        num_anomalous_samples = len(dataset_loader.base_anomalous_audio)
-
         return cls(
             data,
             data_configuration,
             model,
             model_configuration,
-            num_normal_samples,
-            num_anomalous_samples,
+            dataset_loader.num_samples_per_class(),
             seed,
         )
 
@@ -101,11 +81,9 @@ class DataModel:
     def from_preloaded_data(
         cls,
         data: Data,
-        num_normal_samples: int,
-        num_anomalous_samples: int,
+        num_samples_per_class: dict[int, int],
         data_configuration: tuple[Any, ...],
         model_configuration: list[tuple[Any, ...]],
-        search_space: searchspace.SearchSpace,
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
@@ -129,8 +107,7 @@ class DataModel:
             data_configuration,
             model,
             model_configuration,
-            num_normal_samples,
-            num_anomalous_samples,
+            num_samples_per_class,
             seed,
         )
 
@@ -138,23 +115,19 @@ class DataModel:
     def create_data(
         data_configuration: tuple[Any, ...],
         dataset_loader: datasetloader.DatasetLoader,
-        frame_size: int,
-        hop_length: int,
-        num_mel_banks: int,
-        num_mfccs: int,
+        test_size: float,
+        **options,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        normal_preprocessed, anomalous_preprocessed = dataset_loader.load_dataset(
-            data_configuration[0],
-            data_configuration[1],
-            frame_size=frame_size,
-            hop_length=hop_length,
-            num_mel_banks=num_mel_banks,
-            num_mfccs=num_mfccs,
+        dataset = dataset_loader.load_dataset(
+            target_sr=data_configuration[0],
+            preprocessing_type=data_configuration[1],
+            frame_size=options.get("frame_size"),
+            hop_length=options.get("hop_length"),
+            num_mel_filters=options.get("num_mel_filters"),
+            num_mfccs=options.get("num_mfccs"),
         )
 
-        return dataset_loader.supervised_dataset(
-            normal_preprocessed, anomalous_preprocessed
-        )
+        return dataset_loader.supervised_dataset(dataset, test_size=test_size)
 
     @staticmethod
     def create_model(
@@ -227,11 +200,17 @@ class DataModel:
         y_train = tf.one_hot(y_train, 2)
         y_test = tf.one_hot(y_test, 2)
 
-        total_samples = self.num_normal_samples + self.num_anomalous_samples
-        weight_for_0 = (1 / self.num_normal_samples) * (total_samples / 2.0)
-        weight_for_1 = (1 / self.num_anomalous_samples) * (total_samples / 2.0)
+        total_sample_length = 0
+        for sample_length in self.num_samples_per_class.values():
+            total_sample_length += sample_length
 
-        class_weight = {0: weight_for_0, 1: weight_for_1}
+        class_weight = {}
+        i = 0
+        number_of_classes = len(self.num_samples_per_class)
+        for sample_length in self.num_samples_per_class.values():
+            class_weight[i] = (1 / sample_length) * (
+                total_sample_length / number_of_classes
+            )
 
         self.model.fit(
             x=X_train,
