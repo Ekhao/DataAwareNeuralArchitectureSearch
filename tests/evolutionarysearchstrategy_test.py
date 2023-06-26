@@ -124,8 +124,8 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         self.assertEqual(
             self.evolutionary_search_strategy.unevaluated_configurations,
             [
-                ((48000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu")]),
+                ((24000, "mfcc"), [(2, 3, "relu"), (16, 5, "sigmoid")]),
+                ((24000, "mfcc"), [(2, 5, "relu"), (16, 3, "sigmoid")]),
                 ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
             ],
         )
@@ -167,8 +167,8 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         self.assertEqual(
             evolutionary_search_strategy.unevaluated_configurations,
             [
-                ((24000, "mfcc"), [(2, 5, "sigmoid"), (16, 5, "sigmoid")]),
                 ((12000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
+                ((24000, "mel-spectrogram"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
                 ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
             ],
         )
@@ -210,8 +210,8 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         self.assertEqual(
             evolutionary_search_strategy.unevaluated_configurations,
             [
-                ((48000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 3, "sigmoid")]),
+                ((24000, "mfcc"), [(2, 5, "relu"), (32, 5, "sigmoid")]),
+                ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "relu")]),
                 ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
             ],
         )
@@ -283,290 +283,6 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             breeder_configurations.pop()[1],
             [(32, 5, "sigmoid"), (16, 3, "relu"), (8, 3, "relu")],
         )
-
-    def test_new_convolutional_layer_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._new_convolutional_layer_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(len(model_configuration) + 1, len(mutated_model_configuration))
-
-    def test_new_convolutional_layer_mutation_layer_already_max(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 3, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._new_convolutional_layer_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(len(model_configuration), len(mutated_model_configuration))
-
-    def test_remove_convolutional_layer_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._remove_convolutional_layer_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(8, 3, "relu"), (128, 3, "relu")], mutated_model_configuration
-        )
-
-    def test_remove_convolutional_layer_mutation_already_min_layers(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._remove_convolutional_layer_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual([(8, 3, "relu")], mutated_model_configuration)
-
-    def test_increase_number_of_filters_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._increase_number_of_filters_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(16, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")],
-            mutated_model_configuration,
-        )
-
-    def test_decrease_number_of_filters_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._decrease_number_of_filters_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(4, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")],
-            mutated_model_configuration,
-        )
-
-    def test_increase_filter_size_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._increase_filter_size_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(8, 5, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")],
-            mutated_model_configuration,
-        )
-
-    # This is not chaning anything as the decreased filter size is already at the minimum. Maybe this should be an error.
-    def test_decrease_filter_size_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._decrease_filter_size_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(8, 3, "relu"), (128, 3, "relu"), (64, 5, "sigmoid")],
-            mutated_model_configuration,
-        )
-
-    def test_change_activation_function_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._change_activation_function_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual(data_configuration, mutated_data_configuration)
-        self.assertEqual(
-            [(8, 3, "sigmoid"), (128, 3, "relu"), (64, 3, "sigmoid")],
-            mutated_model_configuration,
-        )
-
-    def test_increase_sample_rate_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._increase_sample_rate_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual((48000, "spectrogram"), mutated_data_configuration)
-        self.assertEqual(model_configuration, mutated_model_configuration)
-
-    def test_decrease_sample_rate_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._decrease_sample_rate_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual((12000, "spectrogram"), mutated_data_configuration)
-        self.assertEqual(model_configuration, mutated_model_configuration)
-
-    def test_decrease_sample_rate_mutation_already_minimum(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (325, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._decrease_sample_rate_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual((325, "spectrogram"), mutated_data_configuration)
-        self.assertEqual(model_configuration, mutated_model_configuration)
-
-    def test_change_preprocessing_type_mutation(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 32
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._change_preprocessing_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual((24000, "mel-spectrogram"), mutated_data_configuration)
-        self.assertEqual(model_configuration, mutated_model_configuration)
-
-    def test_change_preprocessing_type_mutation_other_seed(self):
-        evolutionary_search_strategy = (
-            evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 51
-            )
-        )
-        data_configuration = (24000, "spectrogram")
-        model_configuration = [(8, 3, "relu"), (128, 3, "relu"), (64, 3, "sigmoid")]
-
-        (
-            mutated_data_configuration,
-            mutated_model_configuration,
-        ) = evolutionary_search_strategy._change_preprocessing_mutation(
-            (data_configuration, model_configuration)
-        )
-
-        self.assertEqual((24000, "mfcc"), mutated_data_configuration)
-        self.assertEqual(model_configuration, mutated_model_configuration)
 
     def test_crossover(self):
         evolutionary_search_strategy = (

@@ -4,6 +4,7 @@
 import random
 import copy
 import math
+import numbers
 from typing import Optional, Any
 
 # Third Party Imports
@@ -176,58 +177,118 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         mutations = []
         for i in range(amount):
             configuration_to_mutate = configurations_to_mutate[i % amount]
-            mutation = configuration_to_mutate
+            mutation = copy.deepcopy(configuration_to_mutate)
 
             # Sometimes a mutation does nothing, so continue until a change is made.
             # A mutation may be doing nothing if it is randomly chosen to decrease a value that is already at its minimum
             while mutation == configuration_to_mutate:
                 random_mutation_number = random.random()
                 match random_mutation_number:
-                    case x if 0 <= x < 0.1:
-                        mutation = self._new_convolutional_layer_mutation(
-                            configuration_to_mutate
+                    # Case for changing the data granularity
+                    case x if 0 <= x < 0.4:
+                        number_of_value_to_mutate = random.randint(
+                            0, len(mutation[0]) - 1
                         )
-                    case x if 0.1 <= x < 0.2:
-                        mutation = self._remove_convolutional_layer_mutation(
-                            configuration_to_mutate
+                        value_to_mutate = mutation[0][number_of_value_to_mutate]
+                        mutated_value = self._mutate_value(
+                            value_to_mutate,
+                            possible_values=self.search_space.data_granularity_search_space[
+                                number_of_value_to_mutate
+                            ],
                         )
-                    case x if 0.2 <= x < 0.3:
-                        mutation = self._increase_filter_size_mutation(
-                            configuration_to_mutate
+
+                        # Tuples in Python are immutable so we need to convert them to a list in order to change them
+                        # This may not be the fastest way to do this, but this is likely not the bottleneck of the program.
+                        mutation = list(mutation)
+                        mutation[0] = list(mutation[0])
+
+                        mutation[0][number_of_value_to_mutate] = mutated_value
+
+                        # Convert the list back to a tuple
+                        mutation[0] = tuple(mutation[0])
+                        mutation = tuple(mutation)
+
+                    # Case for changing a configuration of a model layer
+                    case x if 0.4 <= x < 8:
+                        number_of_layer_to_mutate = random.randint(
+                            0, len(mutation[1]) - 1
                         )
-                    case x if 0.3 <= x < 0.4:
-                        mutation = self._decrease_filter_size_mutation(
-                            configuration_to_mutate
+                        number_of_value_to_mutate = random.randint(
+                            0, len(mutation[1][number_of_layer_to_mutate]) - 1
                         )
-                    case x if 0.4 <= x < 0.5:
-                        mutation = self._increase_number_of_filters_mutation(
-                            configuration_to_mutate
+
+                        value_to_mutate = mutation[1][number_of_layer_to_mutate][
+                            number_of_value_to_mutate
+                        ]
+                        mutated_value = self._mutate_value(
+                            value_to_mutate,
+                            possible_values=self.search_space.model_layer_search_space[
+                                number_of_value_to_mutate
+                            ],
                         )
-                    case x if 0.5 <= x < 0.6:
-                        mutation = self._decrease_number_of_filters_mutation(
-                            configuration_to_mutate
+
+                        # Convert tuple to list for changing values
+                        mutation = list(mutation)
+                        mutation[1][number_of_layer_to_mutate] = list(  # type: ignore This seems like a weird error since mutation[1] is already a list
+                            mutation[1][number_of_layer_to_mutate]
                         )
-                    case x if 0.6 <= x < 0.7:
-                        mutation = self._change_activation_function_mutation(
-                            configuration_to_mutate
+
+                        mutation[1][number_of_layer_to_mutate][  # type: ignore Same as above
+                            number_of_value_to_mutate
+                        ] = mutated_value
+
+                        # Convert list back to tuple
+                        mutation[1][number_of_layer_to_mutate] = tuple(  # type: ignore Same as above. The type system seems confused and think that this is a tuple when it is a list
+                            mutation[1][number_of_layer_to_mutate]
                         )
-                    case x if 0.7 <= x < 0.8:
-                        mutation = self._increase_sample_rate_mutation(
-                            configuration_to_mutate
-                        )
+                        mutation = tuple(mutation)
+                    # Case for adding a layer to the model
                     case x if 0.8 <= x < 0.9:
-                        mutation = self._decrease_sample_rate_mutation(
-                            configuration_to_mutate
-                        )
+                        mutation = self._new_convolutional_layer_mutation(mutation)  # type: ignore Again the type system gets confused
+                    # Case for removing a layer from the model
                     case x if 0.9 <= x < 1:
-                        mutation = self._change_preprocessing_mutation(
-                            configuration_to_mutate
-                        )
+                        mutation = self._remove_convolutional_layer_mutation(mutation)  # type: ignore Same as above
+
             mutations.append(mutation)
 
         return mutations
 
-    # Generate a random new convolutional layer and add it to the end of the convolutional part of the model.
+    # Check if a value is orderable or not. If orderable, apply an increase or decrease mutation. If not orderable, apply a random mutation.
+    def _mutate_value(self, value_to_mutate: Any, possible_values: list[Any]) -> Any:
+        if (
+            getattr(value_to_mutate, "__lt__", None) is not None
+            and getattr(value_to_mutate, "__gt__", None) is not None
+        ):
+            return self._mutate_orderable_value(value_to_mutate, possible_values)
+        else:
+            return self._mutate_unorderable_value(possible_values)
+
+    # Mutate an orderable value by either increasing or decreasing it
+    def _mutate_orderable_value(
+        self, value_to_mutate: Any, possible_values: list[Any]
+    ) -> Any:
+        # Create a copy of possible_values to avoid unwanted side effects from calling this function.
+        possible_values_copy = possible_values.copy()
+        random_number = random.random()
+        match random_number:
+            # Increase the value
+            case x if 0 <= x < 0.5:
+                possible_values_copy.sort()
+                for possible_value in possible_values_copy:
+                    if possible_value > value_to_mutate:
+                        return possible_value
+                return value_to_mutate  # If there is no higher value in the list
+            # Decrease the value
+            case x if 0.5 <= x < 1:
+                possible_values_copy.sort(reverse=True)
+                for possible_value in possible_values_copy:
+                    if possible_value < value_to_mutate:
+                        return possible_value
+                return value_to_mutate  # If there is no lower value in the list
+
+    # Mutate an unorderable value by choosing a random value from the search space
+    def _mutate_unorderable_value(self, possible_values: list[Any]) -> Any:
+        return random.choice(possible_values)
 
     def _new_convolutional_layer_mutation(
         self, configuration: Configuration
@@ -250,215 +311,6 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         if len(mutation[1]) > 1:
             mutation[1].pop()
         return mutation
-
-    # Increase the filter size of a random convolutional layer
-    def _increase_filter_size_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1] == list)
-        random_conv_layer_number = self._random_conv_layer_number(mutation)
-        layer_to_modify = mutation[1][random_conv_layer_number]
-
-        # Change filter size. Filter size in the current search space is in the second position of the search space tuple.
-        current_filter_size = layer_to_modify[1]
-        new_filter_size = None
-        for seach_space_filter_size in self.search_space.model_layer_search_space[1]:
-            if seach_space_filter_size > current_filter_size:
-                new_filter_size = seach_space_filter_size
-                break
-        if new_filter_size == None:
-            new_filter_size = max(self.search_space.model_layer_search_space[1])
-
-        # Encode layer again
-        layer_to_modify = (layer_to_modify[0], new_filter_size, layer_to_modify[2])
-
-        # Add the layer to the configuration again
-        mutation[1][random_conv_layer_number] = layer_to_modify
-
-        return mutation
-
-    def _decrease_filter_size_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1] == list)
-        random_conv_layer_number = self._random_conv_layer_number(mutation)
-        layer_to_modify = mutation[1][random_conv_layer_number]
-
-        # Change filter size. Filter size in the current search space is in the second position of the search space tuple.
-        current_filter_size = layer_to_modify[1]
-        new_filter_size = None
-        for seach_space_filter_size in reversed(
-            self.search_space.model_layer_search_space[1]
-        ):
-            if seach_space_filter_size < current_filter_size:
-                new_filter_size = seach_space_filter_size
-                break
-        if new_filter_size == None:
-            new_filter_size = min(self.search_space.model_layer_search_space[1])
-
-        # Encode layer again
-        layer_to_modify = (layer_to_modify[0], new_filter_size, layer_to_modify[2])
-
-        # Add the layer to the configuration again
-        mutation[1][random_conv_layer_number] = layer_to_modify
-
-        return mutation
-
-    def _increase_number_of_filters_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1] == list)
-        random_conv_layer_number = self._random_conv_layer_number(mutation)
-        layer_to_modify = mutation[1][random_conv_layer_number]
-
-        # Change filter amount. Amount of filters in the current search space is in the first position of the search space tuple.
-        current_filter_amount = layer_to_modify[0]
-        new_filter_amount = None
-        for seach_space_filter_amount in self.search_space.model_layer_search_space[0]:
-            if seach_space_filter_amount > current_filter_amount:
-                new_filter_amount = seach_space_filter_amount
-                break
-        if new_filter_amount == None:
-            new_filter_amount = max(self.search_space.model_layer_search_space[0])
-
-        # Encode layer again
-        layer_to_modify = (new_filter_amount, layer_to_modify[1], layer_to_modify[2])
-
-        # Add the layer to the configuration again
-        mutation[1][random_conv_layer_number] = layer_to_modify
-
-        return mutation
-
-    def _decrease_number_of_filters_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1] == list)
-        random_conv_layer_number = self._random_conv_layer_number(mutation)
-        layer_to_modify = mutation[1][random_conv_layer_number]
-
-        # Change filter amount. Amount of filters in the current search space is in the first position of the search space tuple.
-        current_filter_amount = layer_to_modify[0]
-        new_filter_amount = None
-        for seach_space_filter_amount in reversed(
-            self.search_space.model_layer_search_space[0]
-        ):
-            if seach_space_filter_amount < current_filter_amount:
-                new_filter_amount = seach_space_filter_amount
-                break
-        if new_filter_amount == None:
-            new_filter_amount = min(self.search_space.model_layer_search_space[0])
-
-        # Encode layer again
-        layer_to_modify = (new_filter_amount, layer_to_modify[1], layer_to_modify[2])
-
-        # Add the layer to the configuration again
-        mutation[1][random_conv_layer_number] = layer_to_modify
-
-        return mutation
-
-    def _change_activation_function_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1] == list)
-        random_conv_layer_number = self._random_conv_layer_number(mutation)
-        layer_to_modify = mutation[1][random_conv_layer_number]
-
-        # Change activation function. Activation function in the current search space is in the third position of the search space tuple.
-        current_activation_function = layer_to_modify[2]
-        new_activation_function = current_activation_function
-
-        while current_activation_function == new_activation_function:
-            new_activation_function = random.choice(
-                self.search_space.model_layer_search_space[2]
-            )
-
-        # Encode layer again
-        layer_to_modify = (
-            layer_to_modify[0],
-            layer_to_modify[1],
-            new_activation_function,
-        )
-
-        # Add the layer to the configuration again
-        mutation[1][random_conv_layer_number] = layer_to_modify
-
-        return mutation
-
-    def _increase_sample_rate_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
-        current_sample_rate = configuration[0][0]
-        new_sample_rate = None
-        for seach_space_sample_rate in reversed(
-            self.search_space.data_granularity_search_space[0]
-        ):
-            if seach_space_sample_rate > current_sample_rate:
-                new_sample_rate = seach_space_sample_rate
-                break
-        if new_sample_rate == None:
-            new_sample_rate = max(self.search_space.data_granularity_search_space[0])
-
-        # Encode layer again
-        new_data_granularity = (new_sample_rate, configuration[0][1])
-
-        # Add the layer to the configuration again
-        configuration = (new_data_granularity, configuration[1])
-
-        return configuration
-
-    def _decrease_sample_rate_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        # Change sample rate. Sample rate in the current search space is in the first position of the search space tuple.
-        current_sample_rate = configuration[0][0]
-        new_sample_rate = None
-        for seach_space_sample_rate in self.search_space.data_granularity_search_space[
-            0
-        ]:
-            if seach_space_sample_rate < current_sample_rate:
-                new_sample_rate = seach_space_sample_rate
-                break
-        if new_sample_rate == None:
-            new_sample_rate = min(self.search_space.data_granularity_search_space[0])
-
-        # Encode layer again
-        new_data_granularity = (new_sample_rate, configuration[0][1])
-
-        # Add the layer to the configuration again
-        configuration = (new_data_granularity, configuration[1])
-
-        return configuration
-
-    def _change_preprocessing_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
-        # Change preprocessing. Preprocessing in the current search space is in the second position of the search space tuple.
-        current_preprocessing = configuration[0][1]
-        new_preprocessing = current_preprocessing
-        if len(self.search_space.data_granularity_search_space[1]) == 1:
-            return configuration
-
-        while new_preprocessing == current_preprocessing:
-            new_preprocessing = random.choice(
-                self.search_space.data_granularity_search_space[1]
-            )
-
-        # Encode layer again
-        new_data_granularity = (configuration[0][0], new_preprocessing)
-
-        # Add the layer to the configuration again
-        configuration = (new_data_granularity, configuration[1])
-
-        return configuration
-
-    def _random_conv_layer_number(self, configuration: Configuration) -> int:
-        return random.randrange(0, len(configuration[1]))
 
     def _create_crossovers(
         self, configurations_to_crossover: list[Configuration], amount: int
