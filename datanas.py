@@ -11,7 +11,7 @@ import tensorflow as tf
 import searchspace
 import datamodelgenerator
 import examples.toyconveyordatasetloader
-import randomsearchstrategy
+import search_strategies.randomsearchstrategy as randomsearchstrategy
 import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 
 

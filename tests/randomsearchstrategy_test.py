@@ -2,7 +2,7 @@
 import unittest
 
 # Local Imports
-import randomsearchstrategy
+import search_strategies.randomsearchstrategy as randomsearchstrategy
 import searchspace
 
 

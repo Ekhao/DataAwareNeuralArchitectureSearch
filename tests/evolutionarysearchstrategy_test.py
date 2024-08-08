@@ -5,7 +5,7 @@ import copy
 import random
 
 # Local Imports
-import evolutionarysearchstrategy
+import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 import datamodel
 import searchspace
 
