@@ -10,9 +10,9 @@ import tensorflow as tf
 # Local Imports
 import searchspace
 import datamodelgenerator
-import toyconveyordatasetloader
+import examples.toyconveyordatasetloader
 import randomsearchstrategy
-import evolutionarysearchstrategy
+import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 
 
 def main():
