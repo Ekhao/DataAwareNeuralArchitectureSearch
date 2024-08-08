@@ -3,7 +3,7 @@ import unittest
 import json  # Loaded to get the dataset path from configuration file.
 
 # Local Imports
-import toyconveyordatasetloader
+import examples.toyconveyordatasetloader
 
 
 class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
@@ -12,7 +12,7 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
         config = json.load(config_file)
         config = config["datanas_config"]
         dataset_config = config["dataset_config"]
-        self.dataset_loader = toyconveyordatasetloader.ToyConveyorDatasetLoader(
+        self.dataset_loader = examples.toyconveyordatasetloader.ToyConveyorDatasetLoader(
             dataset_config["file_path"],
             num_files=[45, 10],
             dataset_options={
