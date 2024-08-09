@@ -145,7 +145,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         y = tf.concat(y, 0)
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X.numpy(), y.numpy(), test_size=test_size, stratify=y  # type: ignore - it seems that typing in tensorflow is not very developed and do not return very useful types.
+            X.numpy(), y.numpy(), test_size=test_size, stratify=y  # type: ignore - it seems that typing in tensorflow do not return very useful types.
         )
 
         return X_train, X_test, y_train, y_test

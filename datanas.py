@@ -262,7 +262,7 @@ def main():
 
     print("Loading dataset files from persistent storage...")
     if args.dataset_name == "ToyConveyor":
-        dataset_loader = toyconveyordatasetloader.ToyConveyorDatasetLoader(
+        dataset_loader = examples.toyconveyordatasetloader.ToyConveyorDatasetLoader(
             args.file_path,
             args.num_files,
             args.dataset_options,
