@@ -5,6 +5,9 @@
 # Standard Library Imports
 from typing import Optional, Any
 
+# Third Party Imports
+import datasets
+
 # Local Imports
 import datasetloader
 
@@ -12,9 +15,9 @@ import datasetloader
 class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
     def __init__(
         self,
-        file_path: str,
-        num_files: list[int],
-        dataset_options: dict[str, Any],
-        num_cores_to_use: int,
     ) -> None:
-        pass
+        self.dataset = datasets.load_dataset("Harvard-Edge/Wake-Vision")
+
+
+if __name__ == "__main__":
+    dataset_loader = WakeVisionDatasetLoader()
