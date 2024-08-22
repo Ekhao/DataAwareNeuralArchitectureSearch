@@ -16,7 +16,10 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
     def __init__(
         self,
     ) -> None:
-        self.dataset = datasets.load_dataset("Harvard-Edge/Wake-Vision")
+        self.dataset = datasets.load_dataset(
+            path="Harvard-Edge/Wake-Vision",
+            cache_dir="/dtu-compute/emjn/huggingface/datasets",
+        )
 
 
 if __name__ == "__main__":
