@@ -7,6 +7,7 @@ import copy
 import tensorflow as tf
 
 # Local Imports
+import data
 import datamodel
 import searchspace
 
@@ -26,7 +27,12 @@ class DataModelTestCase(unittest.TestCase):
             return_value=([None, None], [None, None])
         )
         dataset_loader.supervised_dataset = unittest.mock.Mock(
-            return_value=[[tf.random.uniform((60, 79, 60, 60))]]
+            return_value=data.Data(
+                X_train=tf.random.uniform((500, 79, 60, 60)),
+                X_test=tf.random.uniform((500, 79, 60, 60)),
+                y_train=tf.random.uniform((500,)),
+                y_test=tf.random.uniform((500,)),
+            )
         )
         data_model = datamodel.DataModel.from_data_configuration(
             data_configuration=(12000, "spectrogram"),
@@ -48,7 +54,7 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.98
         data_model1.precision = 0.7
         data_model1.recall = 0.99
@@ -63,7 +69,7 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_not_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.60
         data_model1.precision = 0.56
         data_model1.recall = 0.82
@@ -76,7 +82,7 @@ class DataModelTestCase(unittest.TestCase):
         self.assertFalse(data_model2.better_data_model(data_model1))
 
     def test_better_configuration_model_size(self):
-        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.9
         data_model1.precision = 0.8
         data_model1.recall = 0.8
@@ -101,7 +107,12 @@ class DataModelTestCase(unittest.TestCase):
             return_value=([None, None], [None, None])
         )
         dataset_loader.supervised_dataset = unittest.mock.Mock(
-            return_value=[[tf.random.uniform((60, 79, 60, 60))]]
+            return_value=data.Data(
+                X_train=tf.random.uniform((60, 79, 60, 60)),
+                X_test=tf.random.uniform((60, 79, 60, 60)),
+                y_train=tf.random.uniform((60,)),
+                y_test=tf.random.uniform((60,)),
+            )
         )
         data_model = datamodel.DataModel.from_data_configuration(
             data_configuration=(24000, "spectrogram"),
@@ -123,7 +134,7 @@ class DataModelTestCase(unittest.TestCase):
         model_size_without_training = data_model._evaluate_model_size()
 
         # The model size is not completely deterministic on seperate devices, so we apply an almost equal test.
-        self.assertAlmostEqual(model_size_without_training, 16615324, places=-4)
+        self.assertAlmostEqual(model_size_without_training, 329548, places=-2)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(
@@ -134,11 +145,14 @@ class DataModelTestCase(unittest.TestCase):
             [[2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]],
         )
         dataset_loader = unittest.mock.MagicMock()
-        dataset_loader.load_dataset = unittest.mock.Mock(
-            return_value=([None, None], [None, None])
-        )
+        dataset_loader.load_dataset = unittest.mock.Mock(return_value=(None))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
-            return_value=[[tf.random.uniform((60, 79, 60, 60))]]
+            return_value=data.Data(
+                X_train=tf.random.uniform((60, 79, 60, 60)),
+                X_test=tf.random.uniform((60, 79, 60, 60)),
+                y_train=tf.random.uniform((60,)),
+                y_test=tf.random.uniform((60,)),
+            )
         )
         data_model = datamodel.DataModel.from_data_configuration(
             data_configuration=(750, "mfcc"),
@@ -158,4 +172,4 @@ class DataModelTestCase(unittest.TestCase):
         )
         model_size_without_training = data_model._evaluate_model_size()
 
-        self.assertAlmostEqual(model_size_without_training, 21444220, places=-4)
+        self.assertAlmostEqual(model_size_without_training, 364128, places=-2)

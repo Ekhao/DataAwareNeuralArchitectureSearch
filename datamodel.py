@@ -12,19 +12,17 @@ import numpy as np
 
 # Local Imports
 import datasetloader
-
-Data = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+import data
 
 
 class DataModel:
     # The primary constructor for the data model class. Assumes that all needed data has already been processed - e.g. data loaded according to data configuration and model created according to model configuration. This constructor is likely not used directly.
     def __init__(
         self,
-        data: Data,
+        data: data.Data,
         data_configuration: tuple[Any, ...],
         model: tf.keras.Model,
         model_configuration: list[tuple[Any, ...]],
-        num_samples_per_class: dict[int, int],
         seed=None,
     ) -> None:
         self.data = data
@@ -32,7 +30,6 @@ class DataModel:
         self.model = model
         self.model_configuration = model_configuration
         self.seed = seed
-        self.num_samples_per_class = num_samples_per_class
 
     # A constructor to use when both data and model need to be created.
     @classmethod
@@ -60,7 +57,7 @@ class DataModel:
         # Second subscript is to choose the first entry (all entries should have the same shape)
         model = cls.create_model(
             model_configuration,
-            data[0][0].shape,
+            data.X_train[0].shape,
             num_target_classes,
             model_optimizer,
             model_loss_function,
@@ -72,7 +69,6 @@ class DataModel:
             data_configuration,
             model,
             model_configuration,
-            dataset_loader.num_samples_per_class(),
             seed,
         )
 
@@ -80,8 +76,7 @@ class DataModel:
     @classmethod
     def from_preloaded_data(
         cls,
-        data: Data,
-        num_samples_per_class: dict[int, int],
+        data: data.Data,
         data_configuration: tuple[Any, ...],
         model_configuration: list[tuple[Any, ...]],
         num_target_classes: int,
@@ -90,12 +85,9 @@ class DataModel:
         model_width_dense_layer: int,
         seed: Optional[int] = None,
     ) -> DataModel:
-        # For the data shape we need to subscript the dataset two times.
-        # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
-        # Second subscript is to choose the first entry (all entries should have the same shape)
         model = cls.create_model(
             model_configuration,
-            data[0][0].shape,
+            data.X_train[0].shape,
             num_target_classes,
             model_optimizer,
             model_loss_function,
@@ -107,7 +99,6 @@ class DataModel:
             data_configuration,
             model,
             model_configuration,
-            num_samples_per_class,
             seed,
         )
 
@@ -117,8 +108,8 @@ class DataModel:
         dataset_loader: datasetloader.DatasetLoader,
         test_size: float,
         **options,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        dataset = dataset_loader.load_dataset(
+    ) -> data.Data:
+        dataset = dataset_loader.configure_dataset(
             target_sr=data_configuration[0],
             preprocessing_type=data_configuration[1],
             frame_size=options.get("frame_size"),
@@ -193,34 +184,38 @@ class DataModel:
         return model
 
     def evaluate_data_model(self, num_epochs: int, batch_size: int) -> None:
-        # Maybe introduce validation data to stop training if the validation error starts increasing.
-        X_train, X_test, y_train, y_test = self.data
+        # Calculations to be used several times in function
+        num_classes = max(self.data.y_train) + 1
+        assert num_classes == max(self.data.y_test) + 1
 
         # Turn y_train and y_test into one-hot encoded vectors.
-        y_train = tf.one_hot(y_train, 2)
-        y_test = tf.one_hot(y_test, 2)
+        y_train = tf.one_hot(self.data.y_train, num_classes)
+        y_test = tf.one_hot(self.data.y_test, num_classes)
 
-        total_sample_length = 0
-        for sample_length in self.num_samples_per_class.values():
-            total_sample_length += sample_length
+        # If y_val exists do the same for it
+        if self.data.y_val != None:
+            assert num_classes == max(self.data.y_val) + 1
+            y_val = tf.one_hot(self.data.y_val, num_classes)
+
+        total_sample_length = len(self.data.X_train)
 
         class_weight = {}
-        i = 0
-        number_of_classes = len(self.num_samples_per_class)
-        for sample_length in self.num_samples_per_class.values():
-            class_weight[i] = (1 / sample_length) * (
-                total_sample_length / number_of_classes
-            )
+        for i in range(num_classes):
+            class_sample_length = 0
+            for label in self.data.y_train:
+                if label == i:
+                    class_sample_length += 1
+            class_weight[i] = total_sample_length / class_sample_length
 
         self.model.fit(
-            x=X_train,
+            x=self.data.X_train,
             y=y_train,
             epochs=num_epochs,
             batch_size=batch_size,
             class_weight=class_weight,
         )
 
-        self.model.evaluate(X_test, y_test, batch_size=batch_size)
+        self.model.evaluate(self.data.X_test, y_test, batch_size=batch_size)
 
         # We would like to get accuracy, precision, recall and model size.
         results = self.model.get_metrics_result()

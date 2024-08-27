@@ -10,7 +10,8 @@ import tensorflow as tf
 # Local Imports
 import searchspace
 import datamodelgenerator
-import examples.toyconveyordatasetloader
+import dataset_loaders.toyconveyordatasetloader
+import dataset_loaders.wakevisiondatasetloader
 import search_strategies.randomsearchstrategy as randomsearchstrategy
 import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 
@@ -262,11 +263,13 @@ def main():
 
     print("Loading dataset files from persistent storage...")
     if args.dataset_name == "ToyConveyor":
-        dataset_loader = examples.toyconveyordatasetloader.ToyConveyorDatasetLoader(
-            args.file_path,
-            args.num_files,
-            args.dataset_options,
-            args.num_cores_to_use,
+        dataset_loader = (
+            dataset_loaders.toyconveyordatasetloader.ToyConveyorDatasetLoader(
+                args.file_path,
+                args.num_files,
+                args.dataset_options,
+                args.num_cores_to_use,
+            )
         )
     else:
         raise ValueError(f'No dataset loader defined for "{args.dataset_name}".')
