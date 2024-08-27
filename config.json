@@ -53,7 +53,7 @@
         },
         "dataset_config": {
             "dataset_name": "ToyConveyor",
-            "file_path": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/",
+            "file_path": "/dtu-compute/emjn/ToyConveyor",
             "num_files": [
                 900,
                 200
