@@ -145,11 +145,14 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
     def supervised_dataset(
         self, input_data: tuple[list, ...], test_size: float = 0.2
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Assign numeric labels to normal and abnormal samples
         i = 0
         y = []
         for d in input_data:
             y.append(tf.fill(len(d), i))
+            i += 1
 
+        # Combine the two feature and two label lists into one feature and one label tensor
         X = tf.concat(input_data, 0)
         y = tf.concat(y, 0)
 
