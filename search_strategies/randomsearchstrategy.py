@@ -6,10 +6,9 @@ from typing import Optional, Any
 
 # Local Imports
 import searchstrategy
+from configuration import Configuration
 from searchspace import SearchSpace
 from datamodel import DataModel
-
-Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
 
 
 class RandomSearchStrategy(searchstrategy.SearchStrategy):
@@ -22,20 +21,38 @@ class RandomSearchStrategy(searchstrategy.SearchStrategy):
 
     def generate_configuration(self) -> Configuration:
         # Generate a data configuration by randomly selecting a choice for each data granularity type.
-        data_configuration = tuple(
-            random.choice(x) for x in self.search_space.data_granularity_search_space
-        )
+        data_configuration = {
+            key: random.choice(value)
+            for key, value in self.search_space.data_search_space.items()
+        }
 
         # Generate a random number of layers.
         number_of_layers = random.randint(1, self.max_num_layers)
 
         # Generate a model layer configuration by randomly selecting a choice for each layer.
-        model_layer_configuration = [
-            tuple(random.choice(x) for x in self.search_space.model_layer_search_space)
-            for layer in range(number_of_layers)
-        ]
+        model_configuration = []
+        for layer in range(number_of_layers):
+            # Pick a random type of layer:
+            layer_type = random.choice(
+                list(self.search_space.model_search_space.keys())
+            )
 
-        return (data_configuration, model_layer_configuration)
+            # Create a dictionary to be added to the model configuration list
+            layer = {}
+
+            # Add the type of the layer to this dictionary
+            layer["type"] = layer_type
+
+            # Populate the rest of the layer dictionary with random choices from the possible choices for this layer
+            for key, value in self.search_space.model_search_space[layer_type].items():
+                layer[key] = random.choice(value)
+
+            model_configuration.append(layer)
+
+        return Configuration(
+            data_configuration=data_configuration,
+            model_configuration=model_configuration,
+        )
 
     def update_parameters(self, data_model: DataModel):
         # The random search strategy does not have any parameters that should be updated

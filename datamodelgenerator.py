@@ -14,6 +14,7 @@ import datamodel
 import datasetloader
 from searchstrategy import SearchStrategy
 from datamodel import DataModel
+from configuration import Configuration
 
 
 class DataModelGenerator:
@@ -71,22 +72,18 @@ class DataModelGenerator:
             print(f"Starting model number {model_number}")
 
             # Get configuration from search strategy
-            print("Generating model configuration...")
-            (
-                data_configuration,
-                model_configuration,
-            ) = self.search_strategy.generate_configuration()
+            print("Generating configuration...")
+            configuration = self.search_strategy.generate_configuration()
 
             print(
-                f"Data configuration: {data_configuration}\nModel configuration: {model_configuration}"
+                f"Data configuration: {configuration.data_configuration}\nModel configuration: {configuration.model_configuration}"
             )
 
             print("Creating data and model from configuration...")
-            if data_configuration != previous_data_configuration:
+            if configuration.data_configuration != previous_data_configuration:
                 # Create data and model from configuration
                 data_model = datamodel.DataModel.from_data_configuration(
-                    data_configuration,
-                    model_configuration,
+                    configuration,
                     self.dataset_loader,
                     self.num_target_classes,
                     self.optimizer,
@@ -99,10 +96,8 @@ class DataModelGenerator:
             elif previous_data != None:
                 # Use previous data and create model from configuration
                 data_model = datamodel.DataModel.from_preloaded_data(
+                    configuration,
                     previous_data,
-                    self.dataset_loader.num_samples_per_class(),
-                    data_configuration,
-                    model_configuration,
                     self.num_target_classes,
                     self.optimizer,
                     self.loss_function,
@@ -133,7 +128,7 @@ class DataModelGenerator:
             self.search_strategy.update_parameters(data_model)
 
             print("Freeing loaded data and model to reduce memory consumption...")
-            previous_data_configuration = data_model.data_configuration
+            previous_data_configuration = data_model.configuration.data_configuration
             previous_data = data_model.data
             data_model.free_data_model()
 
@@ -157,8 +152,8 @@ class DataModelGenerator:
             writer.writerow(
                 [
                     model_number,
-                    data_model.data_configuration,
-                    data_model.model_configuration,
+                    data_model.configuration.data_configuration,
+                    data_model.configuration.model_configuration,
                     data_model.accuracy,
                     data_model.precision,
                     data_model.recall,

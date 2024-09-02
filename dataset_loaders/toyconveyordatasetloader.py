@@ -188,7 +188,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             delayed(librosa.resample)(
                 audio,
                 orig_sr=self.base_sr,
-                target_sr=kwargs["target_sr"],
+                target_sr=kwargs["sample_rate"],
                 res_type="kaiser_fast",
             )
             for audio in normal_audio
@@ -197,7 +197,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             delayed(librosa.resample)(
                 audio,
                 orig_sr=self.base_sr,
-                target_sr=kwargs["target_sr"],
+                target_sr=kwargs["sample_rate"],
                 res_type="kaiser_fast",
             )
             for audio in anomalous_audio
@@ -206,7 +206,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         if (normal_audio is None) or (anomalous_audio is None):
             raise TypeError("Resampling audio files failed.")
 
-        match kwargs["preprocessing_type"]:
+        match kwargs["audio_representation"]:
             case "waveform":
                 # While we can easily load data as a waveform it can not be processed by a standard convolutional block that expects image like dimensions.
                 raise NotImplementedError(
@@ -235,7 +235,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 normal_mel_spectogram = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -245,7 +245,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 anomalous_mel_spectrograms = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -263,7 +263,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 normal_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -274,7 +274,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 anomalous_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),

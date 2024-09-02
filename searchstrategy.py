@@ -7,8 +7,7 @@ from typing import Any, Optional
 # Local Imports
 from searchspace import SearchSpace
 from datamodel import DataModel
-
-Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
+from configuration import Configuration
 
 
 class SearchStrategy(ABC):

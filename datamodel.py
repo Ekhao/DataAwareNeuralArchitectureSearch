@@ -13,30 +13,28 @@ import numpy as np
 # Local Imports
 import datasetloader
 import data
+from configuration import Configuration
 
 
 class DataModel:
     # The primary constructor for the data model class. Assumes that all needed data has already been processed - e.g. data loaded according to data configuration and model created according to model configuration. This constructor is likely not used directly.
     def __init__(
         self,
+        configuration: Configuration,
         data: data.Data,
-        data_configuration: tuple[Any, ...],
         model: tf.keras.Model,
-        model_configuration: list[tuple[Any, ...]],
         seed=None,
     ) -> None:
+        self.configuration = configuration
         self.data = data
-        self.data_configuration = data_configuration
         self.model = model
-        self.model_configuration = model_configuration
         self.seed = seed
 
     # A constructor to use when both data and model need to be created.
     @classmethod
     def from_data_configuration(
         cls,
-        data_configuration: tuple[Any, ...],
-        model_configuration: list[tuple[Any, ...]],
+        configuration: Configuration,
         dataset_loader: datasetloader.DatasetLoader,
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
@@ -47,7 +45,7 @@ class DataModel:
         **data_options,
     ) -> DataModel:
         data = cls.create_data(
-            data_configuration,
+            configuration.data_configuration,
             dataset_loader,
             test_size,
             **data_options,
@@ -56,7 +54,7 @@ class DataModel:
         # First subscript is to choose the training samples (here we could also chose the test samples - doesnt matter)
         # Second subscript is to choose the first entry (all entries should have the same shape)
         model = cls.create_model(
-            model_configuration,
+            configuration.model_configuration,
             data.X_train[0].shape,
             num_target_classes,
             model_optimizer,
@@ -65,10 +63,9 @@ class DataModel:
         )
 
         return cls(
+            configuration,
             data,
-            data_configuration,
             model,
-            model_configuration,
             seed,
         )
 
@@ -76,9 +73,8 @@ class DataModel:
     @classmethod
     def from_preloaded_data(
         cls,
+        configuration: Configuration,
         data: data.Data,
-        data_configuration: tuple[Any, ...],
-        model_configuration: list[tuple[Any, ...]],
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
@@ -86,7 +82,7 @@ class DataModel:
         seed: Optional[int] = None,
     ) -> DataModel:
         model = cls.create_model(
-            model_configuration,
+            configuration.model_configuration,
             data.X_train[0].shape,
             num_target_classes,
             model_optimizer,
@@ -95,34 +91,29 @@ class DataModel:
         )
 
         return cls(
+            configuration,
             data,
-            data_configuration,
             model,
-            model_configuration,
             seed,
         )
 
     @staticmethod
     def create_data(
-        data_configuration: tuple[Any, ...],
+        data_configuration: dict,
         dataset_loader: datasetloader.DatasetLoader,
         test_size: float,
         **options,
     ) -> data.Data:
         dataset = dataset_loader.configure_dataset(
-            target_sr=data_configuration[0],
-            preprocessing_type=data_configuration[1],
-            frame_size=options.get("frame_size"),
-            hop_length=options.get("hop_length"),
-            num_mel_filters=options.get("num_mel_filters"),
-            num_mfccs=options.get("num_mfccs"),
+            **data_configuration,
+            **options,
         )
 
         return dataset_loader.supervised_dataset(dataset, test_size=test_size)
 
     @staticmethod
     def create_model(
-        model_configuration: list[tuple[Any, ...]],
+        model_configuration: list[dict],
         data_shape: tuple[int, ...],
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
@@ -137,13 +128,18 @@ class DataModel:
 
         try:
             for layer_config in model_configuration:
-                model.add(
-                    tf.keras.layers.Conv2D(
-                        filters=layer_config[0],
-                        kernel_size=layer_config[1],
-                        activation=layer_config[2],
+                if layer_config["type"] == "conv_layer":
+                    model.add(
+                        tf.keras.layers.Conv2D(
+                            filters=layer_config["filters"],
+                            kernel_size=layer_config["kernel_size"],
+                            activation=layer_config["activation"],
+                        )
                     )
-                )
+                else:
+                    raise ValueError(
+                        f"The layer type {layer_config['type']} is not yet supported"
+                    )
         except ValueError:
             return None
 
