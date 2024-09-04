@@ -5,16 +5,17 @@ from typing import Optional
 
 # Third Party Imports
 import numpy as np
+import tensorflow as tf
 
 
 class Data:
     def __init__(
         self,
-        X_train: np.ndarray,
-        X_test: np.ndarray,
-        y_train: np.ndarray,
-        y_test: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
+        X_train: np.ndarray | tf.data.Dataset,
+        X_test: np.ndarray | tf.data.Dataset,
+        y_train: Optional[np.ndarray] = None,
+        y_test: Optional[np.ndarray] = None,
+        X_val: Optional[np.ndarray | tf.data.Dataset] = None,
         y_val: Optional[np.ndarray] = None,
     ):
         self.X_train = X_train

@@ -12,7 +12,7 @@ import numpy as np
 
 # Local Imports
 import datasetloader
-import data
+from data import Data
 from configuration import Configuration
 
 
@@ -21,7 +21,7 @@ class DataModel:
     def __init__(
         self,
         configuration: Configuration,
-        data: data.Data,
+        data: Data | tf.data.Dataset,
         model: tf.keras.Model,
         seed=None,
     ) -> None:
@@ -50,17 +50,29 @@ class DataModel:
             test_size,
             **data_options,
         )
-        # For the data shape we need to subscript the dataset two times.
-        # First subscript is to choose the training samples (here we could also chose the test samples - doesnt matter)
-        # Second subscript is to choose the first entry (all entries should have the same shape)
-        model = cls.create_model(
-            configuration.model_configuration,
-            data.X_train[0].shape,
-            num_target_classes,
-            model_optimizer,
-            model_loss_function,
-            model_width_dense_layer,
-        )
+
+        if isinstance(data.X_train, np.ndarray):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        elif isinstance(data.X_train, tf.data.Dataset):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train.element_spec[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        else:
+            raise TypeError(
+                "Generated data was neither a np.ndarray or a tf.data.Dataset."
+            )
 
         return cls(
             configuration,
@@ -74,21 +86,32 @@ class DataModel:
     def from_preloaded_data(
         cls,
         configuration: Configuration,
-        data: data.Data,
+        data: Data,
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
         seed: Optional[int] = None,
     ) -> DataModel:
-        model = cls.create_model(
-            configuration.model_configuration,
-            data.X_train[0].shape,
-            num_target_classes,
-            model_optimizer,
-            model_loss_function,
-            model_width_dense_layer,
-        )
+
+        if isinstance(data.X_train, np.ndarray):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        if isinstance(data.X_train, tf.data.Dataset):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train.element_spec[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
 
         return cls(
             configuration,
@@ -103,7 +126,7 @@ class DataModel:
         dataset_loader: datasetloader.DatasetLoader,
         test_size: float,
         **options,
-    ) -> data.Data:
+    ) -> Data:
         dataset = dataset_loader.configure_dataset(
             **data_configuration,
             **options,
@@ -174,38 +197,48 @@ class DataModel:
         return model
 
     def evaluate_data_model(self, num_epochs: int, batch_size: int) -> None:
-        # Calculations to be used several times in function
-        num_classes = max(self.data.y_train) + 1
-        assert num_classes == max(self.data.y_test) + 1
+        if isinstance(self.data.X_train, np.ndarray):
+            # Calculations to be used several times in function
+            num_classes = max(self.data.y_train) + 1
+            assert num_classes == max(self.data.y_test) + 1
 
-        # Turn y_train and y_test into one-hot encoded vectors.
-        y_train = tf.one_hot(self.data.y_train, num_classes)
-        y_test = tf.one_hot(self.data.y_test, num_classes)
+            # Turn y_train and y_test into one-hot encoded vectors.
+            y_train = tf.one_hot(self.data.y_train, num_classes)
+            y_test = tf.one_hot(self.data.y_test, num_classes)
 
-        # If y_val exists do the same for it
-        if self.data.y_val != None:
-            assert num_classes == max(self.data.y_val) + 1
-            y_val = tf.one_hot(self.data.y_val, num_classes)
+            # If y_val exists do the same for it
+            if self.data.y_val != None:
+                assert num_classes == max(self.data.y_val) + 1
+                y_val = tf.one_hot(self.data.y_val, num_classes)
 
-        total_sample_length = len(self.data.X_train)
+            total_sample_length = len(self.data.X_train)
 
-        class_weight = {}
-        for i in range(num_classes):
-            class_sample_length = 0
-            for label in self.data.y_train:
-                if label == i:
-                    class_sample_length += 1
-            class_weight[i] = total_sample_length / class_sample_length
+            class_weight = {}
+            for i in range(num_classes):
+                class_sample_length = 0
+                for label in self.data.y_train:
+                    if label == i:
+                        class_sample_length += 1
+                class_weight[i] = total_sample_length / class_sample_length
 
-        self.model.fit(
-            x=self.data.X_train,
-            y=y_train,
-            epochs=num_epochs,
-            batch_size=batch_size,
-            class_weight=class_weight,
-        )
+            self.model.fit(
+                x=self.data.X_train,
+                y=y_train,
+                epochs=num_epochs,
+                batch_size=batch_size,
+                class_weight=class_weight,
+            )
+            self.model.evaluate(
+                self.data.X_test, y_test, batch_size=batch_size, verbose=1
+            )
 
-        self.model.evaluate(self.data.X_test, y_test, batch_size=batch_size)
+        elif isinstance(self.data.X_train, tf.data.Dataset):
+            self.model.fit(
+                self.data.X_train,
+                num_epochs=num_epochs,
+                validation_data=self.data.X_val,
+            )
+            self.model.evaluate(self.data.X_test, verbose=1)
 
         # We would like to get accuracy, precision, recall and model size.
         results = self.model.get_metrics_result()
