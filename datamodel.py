@@ -63,7 +63,7 @@ class DataModel:
         elif isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
                 configuration.model_configuration,
-                data.X_train.element_spec[0].shape,
+                data.X_train.element_spec[0].shape[1:],
                 num_target_classes,
                 model_optimizer,
                 model_loss_function,
@@ -235,7 +235,8 @@ class DataModel:
         elif isinstance(self.data.X_train, tf.data.Dataset):
             self.model.fit(
                 self.data.X_train,
-                num_epochs=num_epochs,
+                epochs=num_epochs,
+                steps_per_epoch=100,
                 validation_data=self.data.X_val,
             )
             self.model.evaluate(self.data.X_test, verbose=1)

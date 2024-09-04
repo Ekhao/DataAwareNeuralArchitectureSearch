@@ -105,7 +105,15 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
             self._mobilenet_preprocessing_wrapper, num_parallel_calls=tf.data.AUTOTUNE
         )
 
+        ds_split = ds_split.map(
+            self._to_one_hot_encoding, num_parallel_calls=tf.data.AUTOTUNE
+        )
+
         return ds_split
+
+    def _to_one_hot_encoding(self, ds_entry):
+        ds_entry["person"] = tf.one_hot(ds_entry["person"], 2)
+        return ds_entry
 
     def _cast_images_to_float32(self, ds_entry):
         ds_entry["image"] = tf.cast(ds_entry["image"], tf.float32)
