@@ -8,7 +8,7 @@
             "num_cores_to_use": -1
         },
         "search_space_config": {
-            "data_search_space": {
+            "data_search_space_ToyADMOS": {
                 "sample_rate": [
                     48000,
                     24000,
@@ -23,6 +23,22 @@
                     "spectrogram",
                     "mel_spectrogram",
                     "mfcc"
+                ]
+            },
+            "data_search_space": {
+                "resolution": [
+                    400,
+                    300,
+                    240,
+                    200,
+                    150,
+                    128,
+                    64,
+                    32
+                ],
+                "color": [
+                    "monochrome",
+                    "rgb"
                 ]
             },
             "model_search_space": {

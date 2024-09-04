@@ -12,8 +12,7 @@ import tensorflow as tf
 import datasetloader
 from data import Data
 
-input_shape = (224, 224, 3)  # TODO: Make this a configurable option
-batch_size = 128
+batch_size = 128  # TODO: Make this a configurable option
 
 
 class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
@@ -29,7 +28,6 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
         self.hf_dataset["original_test"] = self.hf_dataset["test"]
 
     def configure_dataset(self, **kwargs: Any) -> Any:
-        # TODO: For now we have no configuration of the wake vision dataset
         dataset = {}
         dataset["train_quality"] = self.hf_dataset[
             "original_train_quality"
@@ -42,10 +40,23 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
         )
 
         dataset["train_quality"] = self._preprocessing(
-            dataset["train_quality"], train=True
+            dataset["train_quality"],
+            resolution=kwargs["resolution"],
+            color=kwargs["color"],
+            train=True,
         )
-        dataset["validation"] = self._preprocessing(dataset["validation"], train=False)
-        dataset["test"] = self._preprocessing(dataset["test"], train=False)
+        dataset["validation"] = self._preprocessing(
+            dataset["validation"],
+            resolution=kwargs["resolution"],
+            color=kwargs["color"],
+            train=False,
+        )
+        dataset["test"] = self._preprocessing(
+            dataset["test"],
+            resolution=kwargs["resolution"],
+            color=kwargs["color"],
+            train=False,
+        )
 
         return dataset
 
@@ -73,10 +84,12 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
             X_val=input_data["validation"].batch(batch_size).prefetch(tf.data.AUTOTUNE),
         )
 
-    def _preprocessing(self, ds_split, train=False):
+    def _preprocessing(self, ds_split, resolution, color, train=False):
         ds_split = ds_split.map(
             self._cast_images_to_float32, num_parallel_calls=tf.data.AUTOTUNE
         )
+
+        input_shape = (resolution, resolution, 3)
 
         if train:
             # Repeat indefinitely and shuffle the dataset
@@ -99,6 +112,11 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
             # center crop
             center_crop = lambda ds_entry: self._center_crop(ds_entry, input_shape)
             ds_split = ds_split.map(center_crop, num_parallel_calls=tf.data.AUTOTUNE)
+
+        if color == "monochrome":
+            ds_split = ds_split.map(
+                self._grayscale, num_parallel_calls=tf.data.AUTOTUNE
+            )
 
         # Use the official mobilenet preprocessing to normalize images
         ds_split = ds_split.map(
@@ -176,6 +194,10 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
         ds_entry["image"] = tf.image.random_flip_left_right(ds_entry["image"])
         return ds_entry
 
+    def _grayscale(self, ds_entry):
+        ds_entry["image"] = tf.image.rgb_to_grayscale(ds_entry["image"])
+        return ds_entry
+
     def _mobilenet_preprocessing_wrapper(self, ds_entry):
         ds_entry["image"] = tf.keras.applications.mobilenet_v2.preprocess_input(
             ds_entry["image"]
@@ -188,5 +210,5 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
 
 if __name__ == "__main__":
     dataset_loader = WakeVisionDatasetLoader()
-    dataset = dataset_loader.configure_dataset()
+    dataset = dataset_loader.configure_dataset(resolution=400, color="monochrome")
     s_dataset = dataset_loader.supervised_dataset(dataset, test_size=0.4)
