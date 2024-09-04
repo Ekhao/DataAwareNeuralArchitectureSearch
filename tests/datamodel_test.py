@@ -35,10 +35,10 @@ class DataModelTestCase(unittest.TestCase):
         )
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=data.Data(
-                X_train=tf.random.uniform((500, 79, 60, 60)),
-                X_test=tf.random.uniform((500, 79, 60, 60)),
-                y_train=tf.random.uniform((500,)),
-                y_test=tf.random.uniform((500,)),
+                X_train=tf.random.uniform((500, 79, 60, 60)).numpy(),
+                X_test=tf.random.uniform((500, 79, 60, 60)).numpy(),
+                y_train=tf.random.uniform((500,)).numpy(),
+                y_test=tf.random.uniform((500,)).numpy(),
             )
         )
         configuration = Configuration(
@@ -145,10 +145,10 @@ class DataModelTestCase(unittest.TestCase):
         )
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=data.Data(
-                X_train=tf.random.uniform((60, 79, 60, 60)),
-                X_test=tf.random.uniform((60, 79, 60, 60)),
-                y_train=tf.random.uniform((60,)),
-                y_test=tf.random.uniform((60,)),
+                X_train=tf.random.uniform((60, 79, 60, 60)).numpy(),
+                X_test=tf.random.uniform((60, 79, 60, 60)).numpy(),
+                y_train=tf.random.uniform((60,)).numpy(),
+                y_test=tf.random.uniform((60,)).numpy(),
             )
         )
         configuration = Configuration(
@@ -215,10 +215,10 @@ class DataModelTestCase(unittest.TestCase):
         dataset_loader.load_dataset = unittest.mock.Mock(return_value=(None))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=data.Data(
-                X_train=tf.random.uniform((60, 79, 60, 60)),
-                X_test=tf.random.uniform((60, 79, 60, 60)),
-                y_train=tf.random.uniform((60,)),
-                y_test=tf.random.uniform((60,)),
+                X_train=tf.random.uniform((60, 79, 60, 60)).numpy(),
+                X_test=tf.random.uniform((60, 79, 60, 60)).numpy(),
+                y_train=tf.random.uniform((60,)).numpy(),
+                y_test=tf.random.uniform((60,)).numpy(),
             )
         )
         configuration = Configuration(

@@ -34,8 +34,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
 
     def test_spectrogram_loading(self):
         spectrograms = self.dataset_loader.configure_dataset(
-            target_sr=48000,
-            preprocessing_type="spectrogram",
+            sample_rate=48000,
+            audio_representation="spectrogram",
             frame_size=2048,
             hop_length=512,
         )
@@ -43,8 +43,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
 
     def test_mel_spectrogram_loading(self):
         spectrograms = self.dataset_loader.configure_dataset(
-            target_sr=48000,
-            preprocessing_type="mel_spectrogram",
+            sample_rate=48000,
+            audio_representation="mel_spectrogram",
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
@@ -53,8 +53,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
 
     def test_mfcc_loading(self):
         spectrograms = self.dataset_loader.configure_dataset(
-            target_sr=48000,
-            preprocessing_type="mfcc",
+            sample_rate=48000,
+            audio_representation="mfcc",
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
@@ -65,8 +65,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
     def test_supervised_dataset_generator(self):
         normal_preprocessed, anomalous_preprocessed = (
             self.dataset_loader.configure_dataset(
-                target_sr=48000,
-                preprocessing_type="mel_spectrogram",
+                sample_rate=48000,
+                audio_representation="mel_spectrogram",
                 frame_size=2048,
                 hop_length=512,
                 num_mel_filters=80,
