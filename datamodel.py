@@ -12,34 +12,29 @@ import numpy as np
 
 # Local Imports
 import datasetloader
-
-Data = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+from data import Data
+from configuration import Configuration
 
 
 class DataModel:
     # The primary constructor for the data model class. Assumes that all needed data has already been processed - e.g. data loaded according to data configuration and model created according to model configuration. This constructor is likely not used directly.
     def __init__(
         self,
-        data: Data,
-        data_configuration: tuple[Any, ...],
+        configuration: Configuration,
+        data: Data | tf.data.Dataset,
         model: tf.keras.Model,
-        model_configuration: list[tuple[Any, ...]],
-        num_samples_per_class: dict[int, int],
         seed=None,
     ) -> None:
+        self.configuration = configuration
         self.data = data
-        self.data_configuration = data_configuration
         self.model = model
-        self.model_configuration = model_configuration
         self.seed = seed
-        self.num_samples_per_class = num_samples_per_class
 
     # A constructor to use when both data and model need to be created.
     @classmethod
     def from_data_configuration(
         cls,
-        data_configuration: tuple[Any, ...],
-        model_configuration: list[tuple[Any, ...]],
+        configuration: Configuration,
         dataset_loader: datasetloader.DatasetLoader,
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
@@ -50,29 +45,39 @@ class DataModel:
         **data_options,
     ) -> DataModel:
         data = cls.create_data(
-            data_configuration,
+            configuration.data_configuration,
             dataset_loader,
             test_size,
             **data_options,
         )
-        # For the data shape we need to subscript the dataset two times.
-        # First subscript is to choose the training samples (here we could also chose the test samples - doesnt matter)
-        # Second subscript is to choose the first entry (all entries should have the same shape)
-        model = cls.create_model(
-            model_configuration,
-            data[0][0].shape,
-            num_target_classes,
-            model_optimizer,
-            model_loss_function,
-            model_width_dense_layer,
-        )
+
+        if isinstance(data.X_train, np.ndarray):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        elif isinstance(data.X_train, tf.data.Dataset):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train.element_spec[0].shape[1:],
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        else:
+            raise TypeError(
+                "Generated data was neither a np.ndarray or a tf.data.Dataset."
+            )
 
         return cls(
+            configuration,
             data,
-            data_configuration,
             model,
-            model_configuration,
-            dataset_loader.num_samples_per_class(),
             seed,
         )
 
@@ -80,58 +85,58 @@ class DataModel:
     @classmethod
     def from_preloaded_data(
         cls,
+        configuration: Configuration,
         data: Data,
-        num_samples_per_class: dict[int, int],
-        data_configuration: tuple[Any, ...],
-        model_configuration: list[tuple[Any, ...]],
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
         seed: Optional[int] = None,
     ) -> DataModel:
-        # For the data shape we need to subscript the dataset two times.
-        # First subscript is to choose the normal files (here we could also chose the abnormal files - doesnt matter)
-        # Second subscript is to choose the first entry (all entries should have the same shape)
-        model = cls.create_model(
-            model_configuration,
-            data[0][0].shape,
-            num_target_classes,
-            model_optimizer,
-            model_loss_function,
-            model_width_dense_layer,
-        )
+
+        if isinstance(data.X_train, np.ndarray):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
+        if isinstance(data.X_train, tf.data.Dataset):
+            model = cls.create_model(
+                configuration.model_configuration,
+                data.X_train.element_spec[0].shape,
+                num_target_classes,
+                model_optimizer,
+                model_loss_function,
+                model_width_dense_layer,
+            )
 
         return cls(
+            configuration,
             data,
-            data_configuration,
             model,
-            model_configuration,
-            num_samples_per_class,
             seed,
         )
 
     @staticmethod
     def create_data(
-        data_configuration: tuple[Any, ...],
+        data_configuration: dict,
         dataset_loader: datasetloader.DatasetLoader,
         test_size: float,
         **options,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        dataset = dataset_loader.load_dataset(
-            target_sr=data_configuration[0],
-            preprocessing_type=data_configuration[1],
-            frame_size=options.get("frame_size"),
-            hop_length=options.get("hop_length"),
-            num_mel_filters=options.get("num_mel_filters"),
-            num_mfccs=options.get("num_mfccs"),
+    ) -> Data:
+        dataset = dataset_loader.configure_dataset(
+            **data_configuration,
+            **options,
         )
 
         return dataset_loader.supervised_dataset(dataset, test_size=test_size)
 
     @staticmethod
     def create_model(
-        model_configuration: list[tuple[Any, ...]],
+        model_configuration: list[dict],
         data_shape: tuple[int, ...],
         num_target_classes: int,
         model_optimizer: tf.keras.optimizers.Optimizer,
@@ -141,24 +146,23 @@ class DataModel:
         model = tf.keras.Sequential()
 
         # For the first layer we need to define the data shape
-        model.add(
-            tf.keras.layers.Conv2D(
-                filters=model_configuration[0][0],
-                kernel_size=model_configuration[0][1],
-                activation=model_configuration[0][2],
-                input_shape=data_shape,
-            )
-        )
+
+        model.add(tf.keras.Input(shape=data_shape))
 
         try:
-            for layer_config in model_configuration[1:]:
-                model.add(
-                    tf.keras.layers.Conv2D(
-                        filters=layer_config[0],
-                        kernel_size=layer_config[1],
-                        activation=layer_config[2],
+            for layer_config in model_configuration:
+                if layer_config["type"] == "conv_layer":
+                    model.add(
+                        tf.keras.layers.Conv2D(
+                            filters=layer_config["filters"],
+                            kernel_size=layer_config["kernel_size"],
+                            activation=layer_config["activation"],
+                        )
                     )
-                )
+                else:
+                    raise ValueError(
+                        f"The layer type {layer_config['type']} is not yet supported"
+                    )
         except ValueError:
             return None
 
@@ -193,41 +197,56 @@ class DataModel:
         return model
 
     def evaluate_data_model(self, num_epochs: int, batch_size: int) -> None:
-        # Maybe introduce validation data to stop training if the validation error starts increasing.
-        X_train, X_test, y_train, y_test = self.data
+        if isinstance(self.data.X_train, np.ndarray):
+            # Calculations to be used several times in function
+            num_classes = max(self.data.y_train) + 1
+            assert num_classes == max(self.data.y_test) + 1
 
-        # Turn y_train and y_test into one-hot encoded vectors.
-        y_train = tf.one_hot(y_train, 2)
-        y_test = tf.one_hot(y_test, 2)
+            # Turn y_train and y_test into one-hot encoded vectors.
+            y_train = tf.one_hot(self.data.y_train, num_classes)
+            y_test = tf.one_hot(self.data.y_test, num_classes)
 
-        total_sample_length = 0
-        for sample_length in self.num_samples_per_class.values():
-            total_sample_length += sample_length
+            # If y_val exists do the same for it
+            if self.data.y_val != None:
+                assert num_classes == max(self.data.y_val) + 1
+                y_val = tf.one_hot(self.data.y_val, num_classes)
 
-        class_weight = {}
-        i = 0
-        number_of_classes = len(self.num_samples_per_class)
-        for sample_length in self.num_samples_per_class.values():
-            class_weight[i] = (1 / sample_length) * (
-                total_sample_length / number_of_classes
+            total_sample_length = len(self.data.X_train)
+
+            class_weight = {}
+            for i in range(num_classes):
+                class_sample_length = 0
+                for label in self.data.y_train:
+                    if label == i:
+                        class_sample_length += 1
+                class_weight[i] = total_sample_length / class_sample_length
+
+            self.model.fit(
+                x=self.data.X_train,
+                y=y_train,
+                epochs=num_epochs,
+                batch_size=batch_size,
+                class_weight=class_weight,
+            )
+            self.model.evaluate(
+                self.data.X_test, y_test, batch_size=batch_size, verbose=1
             )
 
-        self.model.fit(
-            x=X_train,
-            y=y_train,
-            epochs=num_epochs,
-            batch_size=batch_size,
-            class_weight=class_weight,
-        )
-
-        self.model.evaluate(X_test, y_test, batch_size=batch_size)
+        elif isinstance(self.data.X_train, tf.data.Dataset):
+            self.model.fit(
+                self.data.X_train,
+                epochs=num_epochs,
+                steps_per_epoch=100,
+                validation_data=self.data.X_val,
+            )
+            self.model.evaluate(self.data.X_test, verbose=1)
 
         # We would like to get accuracy, precision, recall and model size.
         results = self.model.get_metrics_result()
 
-        self.accuracy: float = results["accuracy"].numpy()
-        self.precision: float = results["precision"].numpy()
-        self.recall: float = results["recall"].numpy()
+        self.accuracy: float = results["accuracy"]
+        self.precision: float = results["precision"]
+        self.recall: float = results["recall"]
         self.model_size = self._evaluate_model_size()
 
     def better_accuracy(self, other_datamodel: DataModel) -> bool:

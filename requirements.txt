@@ -4,3 +4,4 @@ librosa
 scikit-learn
 tensorflow
 resampy
+datasets[vision]

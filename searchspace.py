@@ -7,8 +7,8 @@ from typing import Any
 class SearchSpace:
     def __init__(
         self,
-        data_granularity_search_space: list[list[Any]],
-        model_layer_search_space: list[list[Any]],
+        data_search_space: dict[list],
+        model_search_space: dict[dict[list]],
     ) -> None:
-        self.data_granularity_search_space = data_granularity_search_space
-        self.model_layer_search_space = model_layer_search_space
+        self.data_search_space = data_search_space
+        self.model_search_space = model_search_space

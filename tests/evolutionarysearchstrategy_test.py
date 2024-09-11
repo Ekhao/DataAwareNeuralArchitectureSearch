@@ -5,19 +5,27 @@ import copy
 import random
 
 # Local Imports
-import evolutionarysearchstrategy
+import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 import datamodel
 import searchspace
+from configuration import Configuration
 
 
 class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        self.maxDiff = None
         self.search_space = searchspace.SearchSpace(
-            [
-                [48000, 24000, 12000, 6000, 3000, 1500, 750, 325],
-                ["spectrogram", "mel-spectrogram", "mfcc"],
-            ],
-            [[2, 4, 8, 16, 32, 64, 128], [3, 5], ["relu", "sigmoid"]],
+            data_search_space={
+                "sample_rate": [48000, 24000, 12000, 6000, 3000, 1500, 750, 325],
+                "audio_representation": ["spectrogram", "mel-spectrogram", "mfcc"],
+            },
+            model_search_space={
+                "conv_layer": {
+                    "filters": [2, 4, 8, 16, 32, 64, 128],
+                    "kernel_size": [3, 5],
+                    "activation": ["relu", "sigmoid"],
+                }
+            },
         )
         self.evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
@@ -30,24 +38,64 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             trivial_initialization=True
         )
         self.assertEqual(
-            self.evolutionary_search_strategy.unevaluated_configurations.pop(0),
-            ((24000, "spectrogram"), [(4, 5, "relu")]),
+            vars(self.evolutionary_search_strategy.unevaluated_configurations.pop(0)),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 24000,
+                        "audio_representation": "spectrogram",
+                    },
+                    model_configuration=[
+                        {
+                            "type": "conv_layer",
+                            "filters": 8,
+                            "kernel_size": 3,
+                            "activation": "sigmoid",
+                        }
+                    ],
+                )
+            ),
         )
         self.assertEqual(
-            self.evolutionary_search_strategy.unevaluated_configurations.pop(0),
-            ((325, "spectrogram"), [(64, 3, "relu")]),
+            vars(self.evolutionary_search_strategy.unevaluated_configurations.pop(0)),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 48000,
+                        "audio_representation": "mfcc",
+                    },
+                    model_configuration=[
+                        {
+                            "type": "conv_layer",
+                            "filters": 2,
+                            "kernel_size": 5,
+                            "activation": "sigmoid",
+                        }
+                    ],
+                )
+            ),
         )
 
     def test_generate_configuration(self):
         self.evolutionary_search_strategy.initialize_search_strategy(
             trivial_initialization=True
         )
-        (
-            data_configuration,
-            model_configuration,
-        ) = self.evolutionary_search_strategy.generate_configuration()
-        self.assertEqual(data_configuration, (24000, "spectrogram"))
-        self.assertEqual(model_configuration, [(4, 5, "relu")])
+        configuration = self.evolutionary_search_strategy.generate_configuration()
+        self.assertEqual(
+            configuration.data_configuration,
+            {"sample_rate": 24000, "audio_representation": "spectrogram"},
+        )
+        self.assertEqual(
+            configuration.model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 8,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                }
+            ],
+        )
 
     def test_generate_configuration_no_population(self):
         self.evolutionary_search_strategy.initialize_search_strategy(
@@ -55,12 +103,22 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         )
         self.evolutionary_search_strategy.unevaluated_configurations = []
 
-        (
-            data_configuration,
-            model_configuration,
-        ) = self.evolutionary_search_strategy.generate_configuration()
-        self.assertEqual(data_configuration, (6000, "mel-spectrogram"))
-        self.assertEqual(model_configuration, [(2, 5, "relu")])
+        configuration = self.evolutionary_search_strategy.generate_configuration()
+        self.assertEqual(
+            configuration.data_configuration,
+            {"sample_rate": 12000, "audio_representation": "mel-spectrogram"},
+        )
+        self.assertEqual(
+            configuration.model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                }
+            ],
+        )
 
     def test_update_parameters(self):
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
@@ -92,8 +150,26 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
 
     def test_generate_new_unevaluated_population(self):
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
-        data_model.data_configuration = (24000, "mfcc")
-        data_model.model_configuration = [(2, 5, "relu"), (16, 5, "sigmoid")]
+        data_model.configuration = Configuration(
+            data_configuration={
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
         self.evolutionary_search_strategy.population = [
             (copy.deepcopy(data_model), random.uniform(0, 3)) for i in range(5)
         ]
@@ -106,28 +182,85 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         self.evolutionary_search_strategy._generate_new_unevaluated_configurations()
 
         self.assertEqual(
-            self.evolutionary_search_strategy.population[0][0].data_configuration,
-            (24000, "mfcc"),
+            self.evolutionary_search_strategy.population[0][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            self.evolutionary_search_strategy.population[1][0].data_configuration,
-            (24000, "mfcc"),
+            self.evolutionary_search_strategy.population[1][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            self.evolutionary_search_strategy.population[0][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            self.evolutionary_search_strategy.population[1][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            self.evolutionary_search_strategy.unevaluated_configurations,
+            self.evolutionary_search_strategy.population[0][
+                0
+            ].configuration.model_configuration,
             [
-                ((24000, "mfcc"), [(2, 3, "relu"), (16, 5, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 3, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
             ],
+        )
+        self.assertEqual(
+            self.evolutionary_search_strategy.population[1][
+                0
+            ].configuration.model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
+        self.assertEqual(
+            vars(self.evolutionary_search_strategy.unevaluated_configurations[0]),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 24000,
+                        "audio_representation": "mfcc",
+                    },
+                    model_configuration=[
+                        {
+                            "type": "conv_layer",
+                            "filters": 2,
+                            "kernel_size": 3,
+                            "activation": "relu",
+                        },
+                        {
+                            "type": "conv_layer",
+                            "filters": 16,
+                            "kernel_size": 5,
+                            "activation": "sigmoid",
+                        },
+                    ],
+                )
+            ),
         )
 
     def test_generate_new_unevaluated_population_other_seed2(self):
@@ -137,8 +270,26 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             )
         )
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
-        data_model.data_configuration = (24000, "mfcc")
-        data_model.model_configuration = [(2, 5, "relu"), (16, 5, "sigmoid")]
+        data_model.configuration = Configuration(
+            data_configuration={
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 4,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
         evolutionary_search_strategy.population = [
             (copy.deepcopy(data_model), random.uniform(0, 3)) for i in range(5)
         ]
@@ -149,28 +300,85 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         evolutionary_search_strategy._generate_new_unevaluated_configurations()
 
         self.assertEqual(
-            evolutionary_search_strategy.population[0][0].data_configuration,
-            (24000, "mfcc"),
+            evolutionary_search_strategy.population[0][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            evolutionary_search_strategy.population[1][0].data_configuration,
-            (24000, "mfcc"),
+            evolutionary_search_strategy.population[1][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            evolutionary_search_strategy.population[0][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            evolutionary_search_strategy.population[1][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            evolutionary_search_strategy.unevaluated_configurations,
+            evolutionary_search_strategy.population[0][
+                0
+            ].configuration.model_configuration,
             [
-                ((12000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
-                ((24000, "mel-spectrogram"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
+                {
+                    "type": "conv_layer",
+                    "filters": 4,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
             ],
+        )
+        self.assertEqual(
+            evolutionary_search_strategy.population[1][
+                0
+            ].configuration.model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 4,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
+        self.assertEqual(
+            vars(evolutionary_search_strategy.unevaluated_configurations[0]),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 24000,
+                        "audio_representation": "mfcc",
+                    },
+                    model_configuration=[
+                        {
+                            "type": "conv_layer",
+                            "filters": 8,
+                            "kernel_size": 5,
+                            "activation": "relu",
+                        },
+                        {
+                            "type": "conv_layer",
+                            "filters": 16,
+                            "kernel_size": 5,
+                            "activation": "sigmoid",
+                        },
+                    ],
+                )
+            ),
         )
 
     def test_generate_new_unevaluated_population_other_seed3(self):
@@ -180,8 +388,26 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             )
         )
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
-        data_model.data_configuration = (24000, "mfcc")
-        data_model.model_configuration = [(2, 5, "relu"), (16, 5, "sigmoid")]
+        data_model.configuration = Configuration(
+            data_configuration={
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
         evolutionary_search_strategy.population = [
             (copy.deepcopy(data_model), random.uniform(0, 3)) for i in range(5)
         ]
@@ -192,28 +418,85 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         evolutionary_search_strategy._generate_new_unevaluated_configurations()
 
         self.assertEqual(
-            evolutionary_search_strategy.population[0][0].data_configuration,
-            (24000, "mfcc"),
+            evolutionary_search_strategy.population[0][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            evolutionary_search_strategy.population[1][0].data_configuration,
-            (24000, "mfcc"),
+            evolutionary_search_strategy.population[1][
+                0
+            ].configuration.data_configuration,
+            {
+                "sample_rate": 24000,
+                "audio_representation": "mfcc",
+            },
         )
         self.assertEqual(
-            evolutionary_search_strategy.population[0][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            evolutionary_search_strategy.population[1][0].model_configuration,
-            [(2, 5, "relu"), (16, 5, "sigmoid")],
-        )
-        self.assertEqual(
-            evolutionary_search_strategy.unevaluated_configurations,
+            evolutionary_search_strategy.population[0][
+                0
+            ].configuration.model_configuration,
             [
-                ((24000, "mfcc"), [(2, 5, "relu"), (32, 5, "sigmoid")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "relu")]),
-                ((24000, "mfcc"), [(2, 5, "relu"), (16, 5, "sigmoid")]),
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
             ],
+        )
+        self.assertEqual(
+            evolutionary_search_strategy.population[1][
+                0
+            ].configuration.model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 2,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
+        self.assertEqual(
+            vars(evolutionary_search_strategy.unevaluated_configurations[0]),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 24000,
+                        "audio_representation": "mel-spectrogram",
+                    },
+                    model_configuration=[
+                        {
+                            "type": "conv_layer",
+                            "filters": 2,
+                            "kernel_size": 5,
+                            "activation": "relu",
+                        },
+                        {
+                            "type": "conv_layer",
+                            "filters": 16,
+                            "kernel_size": 5,
+                            "activation": "sigmoid",
+                        },
+                    ],
+                )
+            ),
         )
 
     def test_tournament_selection(self):
@@ -264,12 +547,33 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             )
         )
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
-        data_model.data_configuration = (12000, "mel-spectrogram")
-        data_model.model_configuration = [
-            (32, 5, "sigmoid"),
-            (16, 3, "relu"),
-            (8, 3, "relu"),
-        ]
+        data_model.configuration = Configuration(
+            data_configuration={
+                "sample_rate": 12000,
+                "audio_representation": "mel-spectrogram",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 32,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 8,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+            ],
+        )
+
         breeders = [
             (copy.deepcopy(data_model), random.uniform(0, 3)) for i in range(10)
         ]
@@ -278,10 +582,35 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             breeders  # type: ignore : This function would complain about being supplied with a mock object instead of a DataModel object.
         )
 
-        self.assertEqual(breeder_configurations.pop()[0], (12000, "mel-spectrogram"))
         self.assertEqual(
-            breeder_configurations.pop()[1],
-            [(32, 5, "sigmoid"), (16, 3, "relu"), (8, 3, "relu")],
+            breeder_configurations.pop().data_configuration,
+            {
+                "sample_rate": 12000,
+                "audio_representation": "mel-spectrogram",
+            },
+        )
+        self.assertEqual(
+            breeder_configurations.pop().model_configuration,
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 32,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 16,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 8,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+            ],
         )
 
     def test_crossover(self):
@@ -290,25 +619,90 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
                 self.search_space, 2, 5, 0.5, 0.2, 10000, 70
             )
         )
-
-        data_configuration1 = (6000, "mfcc")
-        model_configuration1 = [(8, 5, "relu"), (4, 3, "relu"), (64, 3, "sigmoid")]
-
-        data_configuration2 = (12000, "mel-spectrogram")
-        model_configuration2 = [(64, 5, "relu"), (64, 5, "relu"), (32, 3, "relu")]
-
-        (
-            crossovered_data_configuration,
-            crossovered_model_configuration,
-        ) = evolutionary_search_strategy._crossover(
-            (data_configuration1, model_configuration1),
-            (data_configuration2, model_configuration2),
+        configuration_1 = Configuration(
+            data_configuration={
+                "sample_rate": 6000,
+                "audio_representation": "mfcc",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 8,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 4,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+            ],
         )
 
-        self.assertEqual((6000, "mel-spectrogram"), crossovered_data_configuration)
+        configuration_2 = Configuration(
+            data_configuration={
+                "sample_rate": 12000,
+                "audio_representation": "mel-spectrogram",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 32,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+            ],
+        )
+
+        crossover_configuration = evolutionary_search_strategy._crossover(
+            configuration1=configuration_1, configuration2=configuration_2
+        )
+
         self.assertEqual(
-            [(64, 5, "relu"), (64, 3, "relu"), (64, 3, "relu")],
-            crossovered_model_configuration,
+            {"sample_rate": 6000, "audio_representation": "mel-spectrogram"},
+            crossover_configuration.data_configuration,
+        )
+        self.assertEqual(
+            [
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+            ],
+            crossover_configuration.model_configuration,
         )
 
     def test_crossover_different_length(self):
@@ -318,39 +712,111 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
             )
         )
 
-        data_configuration1 = (6000, "mfcc")
-        model_configuration1 = [
-            (8, 3, "sigmoid"),
-            (4, 3, "sigmoid"),
-            (64, 3, "sigmoid"),
-        ]
-
-        data_configuration2 = (750, "spectrogram")
-        model_configuration2 = [
-            (64, 5, "relu"),
-            (64, 5, "relu"),
-            (32, 3, "relu"),
-            (64, 3, "sigmoid"),
-            (128, 5, "sigmoid"),
-        ]
-
-        (
-            crossovered_data_configuration,
-            crossovered_model_configuration,
-        ) = evolutionary_search_strategy._crossover(
-            (data_configuration1, model_configuration1),
-            (data_configuration2, model_configuration2),
+        configuration_1 = Configuration(
+            data_configuration={
+                "sample_rate": 6000,
+                "audio_representation": "mfcc",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 8,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 4,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+            ],
         )
 
-        self.assertEqual((6000, "mfcc"), crossovered_data_configuration)
+        configuration_2 = Configuration(
+            data_configuration={
+                "sample_rate": 750,
+                "audio_representation": "spectrogram",
+            },
+            model_configuration=[
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 32,
+                    "kernel_size": 3,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 128,
+                    "kernel_size": 5,
+                    "activation": "sigmoid",
+                },
+            ],
+        )
+
+        crossover_configuration = evolutionary_search_strategy._crossover(
+            configuration1=configuration_1, configuration2=configuration_2
+        )
+
+        self.assertEqual(
+            {
+                "sample_rate": 6000,
+                "audio_representation": "mfcc",
+            },
+            crossover_configuration.data_configuration,
+        )
         self.assertEqual(
             [
-                (64, 5, "sigmoid"),
-                (64, 5, "relu"),
-                (32, 3, "sigmoid"),
-                (64, 3, "sigmoid"),
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 5,
+                    "activation": "relu",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
+                {
+                    "type": "conv_layer",
+                    "filters": 64,
+                    "kernel_size": 3,
+                    "activation": "sigmoid",
+                },
             ],
-            crossovered_model_configuration,
+            crossover_configuration.model_configuration,
         )
 
     def test_create_crossovers(self):
@@ -372,27 +838,49 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         )
 
         self.assertEqual(
-            deep_copy_unevaluated_configurations,
-            evolutionary_search_strategy.unevaluated_configurations,
+            vars(deep_copy_unevaluated_configurations[0]),
+            vars(evolutionary_search_strategy.unevaluated_configurations[0]),
         )
+
         self.assertEqual(
-            crossovers,
-            [
-                ((1500, "mel-spectrogram"), [(8, 3, "sigmoid")]),
-                ((6000, "spectrogram"), [(4, 5, "sigmoid")]),
-                (
-                    (1500, "mfcc"),
-                    [(128, 3, "sigmoid"), (8, 3, "sigmoid"), (64, 3, "sigmoid")],
-                ),
-                ((1500, "spectrogram"), [(2, 3, "relu"), (128, 3, "relu")]),
-                (
-                    (48000, "mfcc"),
-                    [
-                        (2, 3, "relu"),
-                        (128, 3, "relu"),
-                        (2, 3, "sigmoid"),
-                        (32, 3, "relu"),
+            vars(deep_copy_unevaluated_configurations[3]),
+            vars(evolutionary_search_strategy.unevaluated_configurations[3]),
+        )
+
+        self.assertEqual(
+            vars(crossovers[1]),
+            vars(
+                Configuration(
+                    data_configuration={
+                        "sample_rate": 48000,
+                        "audio_representation": "mfcc",
+                    },
+                    model_configuration=[
+                        {
+                            "activation": "sigmoid",
+                            "filters": 128,
+                            "kernel_size": 3,
+                            "type": "conv_layer",
+                        },
+                        {
+                            "activation": "relu",
+                            "filters": 8,
+                            "kernel_size": 5,
+                            "type": "conv_layer",
+                        },
+                        {
+                            "activation": "relu",
+                            "filters": 64,
+                            "kernel_size": 5,
+                            "type": "conv_layer",
+                        },
+                        {
+                            "activation": "sigmoid",
+                            "filters": 8,
+                            "kernel_size": 5,
+                            "type": "conv_layer",
+                        },
                     ],
-                ),
-            ],
+                )
+            ),
         )
