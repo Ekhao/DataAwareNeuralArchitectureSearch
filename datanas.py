@@ -10,7 +10,8 @@ import tensorflow as tf
 # Local Imports
 import searchspace
 import datamodelgenerator
-import examples.toyconveyordatasetloader
+import dataset_loaders.toyconveyordatasetloader
+import dataset_loaders.wakevisiondatasetloader
 import search_strategies.randomsearchstrategy as randomsearchstrategy
 import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
 
@@ -18,7 +19,7 @@ import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrateg
 def main():
     # Parse the command line arguments
     argparser = argparse.ArgumentParser(
-        description="A simple implementation of a Data Aware NAS. Note the constants.py file also can be used to control settings. The command line arguments take precedence over the constants.py file."
+        description="A simple implementation of a Data Aware NAS. Note the constants.py file also can be used to control settings. The command line arguments take precedence over the constants.py file. The search space should be configured in the config.json file."
     )
 
     # General Parameters
@@ -41,18 +42,6 @@ def main():
         "--num_cores_to_use",
         help="The number of cpu cores to use for parallel processing. Mainly used for data loading. Can be set to -1 to use all available cores.",
         type=int,
-    )
-
-    # Search Space Parameters
-    argparser.add_argument(
-        "-d",
-        "--data_search_space",
-        help="The search space to use for data preprocessing.",
-    )
-    argparser.add_argument(
-        "-m",
-        "--model_layer_search_space",
-        help="The search space to use for model layers.",
     )
 
     # Model Parameters
@@ -190,10 +179,6 @@ def main():
         args.seed = general_config["seed"]
     if not args.num_cores_to_use:
         args.num_cores_to_use = joblib_config["num_cores_to_use"]
-    if not args.data_search_space:
-        args.data_search_space = search_space_config["data_search_space"]
-    if not args.model_layer_search_space:
-        args.model_layer_search_space = search_space_config["model_layer_search_space"]
     if not args.optimizer:
         args.optimizer = model_config["optimizer"]
     if not args.loss:
@@ -231,13 +216,16 @@ def main():
     if not args.crossover_ratio:
         args.crossover_ratio = evolutionary_config["crossover_ratio"]
 
-    # If dataset options have been passed as command line arguments, parse them into a dictionary
+    # Add the search spaces from the config file to arguments:
+    args.data_search_space = search_space_config["data_search_space"]
+    args.model_search_space = search_space_config["model_search_space"]
+
+    # If the the dataset options have been passed as command line arguments, parse them into a dictionary
     if isinstance(args.dataset_options, str):
         temp_dataset_options = {}
         for option in args.dataset_options:
             key, value = option.split(":")
             temp_dataset_options[key] = value
-
         args.dataset_options = temp_dataset_options
 
     # The following block of code enables memory growth for the GPU during runtime.
@@ -257,16 +245,22 @@ def main():
 
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
-        args.data_search_space, args.model_layer_search_space
+        args.data_search_space, args.model_search_space
     )
 
     print("Loading dataset files from persistent storage...")
     if args.dataset_name == "ToyConveyor":
-        dataset_loader = examples.toyconveyordatasetloader.ToyConveyorDatasetLoader(
-            args.file_path,
-            args.num_files,
-            args.dataset_options,
-            args.num_cores_to_use,
+        dataset_loader = (
+            dataset_loaders.toyconveyordatasetloader.ToyConveyorDatasetLoader(
+                args.file_path,
+                args.num_files,
+                args.dataset_options,
+                args.num_cores_to_use,
+            )
+        )
+    elif args.dataset_name == "wake_vision":
+        dataset_loader = (
+            dataset_loaders.wakevisiondatasetloader.WakeVisionDatasetLoader()
         )
     else:
         raise ValueError(f'No dataset loader defined for "{args.dataset_name}".')
@@ -308,8 +302,8 @@ def main():
     # Print out results
     print("Models on pareto front: ")
     for data_model in pareto_front:
-        print(data_model.data_configuration)
-        print(data_model.model_configuration)
+        print(data_model.configuration.data_configuration)
+        print(data_model.configuration.model_configuration)
         print(
             f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Model Size (in bytes): {data_model.model_size}."
         )

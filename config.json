@@ -8,8 +8,8 @@
             "num_cores_to_use": -1
         },
         "search_space_config": {
-            "data_search_space": [
-                [
+            "data_search_space_ToyADMOS": {
+                "sample_rate": [
                     48000,
                     24000,
                     12000,
@@ -19,31 +19,49 @@
                     750,
                     375
                 ],
-                [
+                "audio_representation": [
                     "spectrogram",
                     "mel_spectrogram",
                     "mfcc"
                 ]
-            ],
-            "model_layer_search_space": [
-                [
-                    2,
-                    4,
-                    8,
-                    16,
-                    32,
+            },
+            "data_search_space": {
+                "resolution": [
+                    400,
+                    300,
+                    240,
+                    200,
+                    150,
+                    128,
                     64,
-                    128
+                    32
                 ],
-                [
-                    3,
-                    5
-                ],
-                [
-                    "relu",
-                    "sigmoid"
+                "color": [
+                    "monochrome",
+                    "rgb"
                 ]
-            ]
+            },
+            "model_search_space": {
+                "conv_layer": {
+                    "filters": [
+                        2,
+                        4,
+                        8,
+                        16,
+                        32,
+                        64,
+                        128
+                    ],
+                    "kernel_size": [
+                        3,
+                        5
+                    ],
+                    "activation": [
+                        "relu",
+                        "sigmoid"
+                    ]
+                }
+            }
         },
         "model_config": {
             "optimizer": "adam",
@@ -53,7 +71,7 @@
         },
         "dataset_config": {
             "dataset_name": "ToyConveyor",
-            "file_path": "/Users/emjn/Documents/DTU/Datasets/ToyConveyor/",
+            "file_path": "/dtu-compute/emjn/ToyConveyor",
             "num_files": [
                 900,
                 200

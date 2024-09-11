@@ -13,13 +13,11 @@ class DatasetLoader(ABC):
     def __init__(self) -> None:
         pass
 
+    # This method is returns a configured dataset according to a specific data configuration.
+    def configure_dataset(self, **kwargs: Any) -> Any:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
+        pass
+
     def supervised_dataset(
         self, *data: Any, test_size: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
-        pass
-
-    def load_dataset(self, **kwargs: Any) -> tuple[list, ...]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
-        pass
-
-    def num_samples_per_class(self) -> dict[int, int]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
         pass

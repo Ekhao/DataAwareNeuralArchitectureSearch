@@ -14,9 +14,9 @@ import numpy as np
 import searchstrategy
 from searchspace import SearchSpace
 from datamodel import DataModel
+from configuration import Configuration
 
 # Type Aliases
-Configuration = tuple[tuple[Any, ...], list[tuple[Any, ...]]]
 Individual = tuple[DataModel, float]
 
 
@@ -50,17 +50,14 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         self.trivial_initialization = trivial_initialization
         if trivial_initialization:
             self.unevaluated_configurations = [
-                (
-                    tuple(
-                        random.choice(x)
-                        for x in self.search_space.data_granularity_search_space
-                    ),
-                    [
-                        tuple(
-                            random.choice(x)
-                            for x in self.search_space.model_layer_search_space
-                        )
-                        for layer in range(1)
+                Configuration(
+                    data_configuration={
+                        key: random.choice(value)
+                        for key, value in self.search_space.data_search_space.items()
+                    },
+                    # Generate a model configuration by randomly selecting a choice the first (and only) layer.
+                    model_configuration=[
+                        self._pick_random_model_layer() for _ in range(1)
                     ],
                 )
                 for i in range(self.population_size)
@@ -68,17 +65,15 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
         else:
             self.unevaluated_configurations = [
-                (
-                    tuple(
-                        random.choice(x)
-                        for x in self.search_space.data_granularity_search_space
-                    ),
-                    [
-                        tuple(
-                            random.choice(x)
-                            for x in self.search_space.model_layer_search_space
-                        )
-                        for layer in range(random.randint(1, self.max_num_layers))
+                Configuration(
+                    data_configuration={
+                        key: random.choice(value)
+                        for key, value in self.search_space.data_search_space.items()
+                    },
+                    # Generate a model configuration by randomly selecting a choice for all layers
+                    model_configuration=[
+                        self._pick_random_model_layer()
+                        for _ in range(random.randint(1, self.max_num_layers))
                     ],
                 )
                 for i in range(self.population_size)
@@ -99,6 +94,22 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         # Add performance of the currently evaluating data model to the population
         fitness = self._evaluate_fitness(data_model, self.approximate_model_size)
         self.population.append((data_model, fitness))
+
+    def _pick_random_model_layer(self) -> dict:
+        # Pick a random type of layer:
+        layer_type = random.choice(list(self.search_space.model_search_space.keys()))
+
+        # Create a dictionary to be added to the model configuration list
+        layer = {}
+
+        # Add the type of the layer to this dictionary
+        layer["type"] = layer_type
+
+        # Populate the rest of the layer dictionary with random choices from the possible choices for this layer
+        for key, value in self.search_space.model_search_space[layer_type].items():
+            layer[key] = random.choice(value)
+
+        return layer
 
     @staticmethod
     # TODO: Maybe move this into the DataModel class
@@ -161,14 +172,11 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         return winners
 
     # This function takes a list of tuples of DataModels and their fitness.
-    # It should return the configurations that generated those data models to create mutations and crossovers of them
+    # It should return the configurations that generated those.
     def _get_breeder_configurations(
         self, breeders: list[Individual]
     ) -> list[Configuration]:
-        return [
-            (breeder[0].data_configuration, breeder[0].model_configuration)
-            for breeder in breeders
-        ]
+        return [breeder[0].configuration for breeder in breeders]
 
     def _create_mutations(
         self, configurations_to_mutate: list[Configuration], amount: int
@@ -181,67 +189,60 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
             # Sometimes a mutation does nothing, so continue until a change is made.
             # A mutation may be doing nothing if it is randomly chosen to decrease a value that is already at its minimum
-            while mutation == configuration_to_mutate:
+            while vars(mutation) == vars(configuration_to_mutate):
                 random_mutation_number = random.random()
                 match random_mutation_number:
                     # Case for changing the data granularity
                     case x if 0 <= x < 0.4:
-                        number_of_value_to_mutate = random.randint(
-                            0, len(mutation[0]) - 1
+                        key_to_mutate = random.choice(
+                            list(configuration_to_mutate.data_configuration.keys())
                         )
-                        value_to_mutate = mutation[0][number_of_value_to_mutate]
+                        value_to_mutate = mutation.data_configuration[key_to_mutate]
                         mutated_value = self._mutate_value(
                             value_to_mutate,
-                            possible_values=self.search_space.data_granularity_search_space[
-                                number_of_value_to_mutate
+                            possible_values=self.search_space.data_search_space[
+                                key_to_mutate
                             ],
                         )
 
-                        # Tuples in Python are immutable so we need to convert them to a list in order to change them
-                        # This may not be the fastest way to do this, but this is likely not the bottleneck of the program.
-                        mutation = list(mutation)
-                        mutation[0] = list(mutation[0])
-
-                        mutation[0][number_of_value_to_mutate] = mutated_value
-
-                        # Convert the list back to a tuple
-                        mutation[0] = tuple(mutation[0])
-                        mutation = tuple(mutation)
+                        mutation.data_configuration[key_to_mutate] = mutated_value
 
                     # Case for changing a configuration of a model layer
                     case x if 0.4 <= x < 8:
                         number_of_layer_to_mutate = random.randint(
-                            0, len(mutation[1]) - 1
-                        )
-                        number_of_value_to_mutate = random.randint(
-                            0, len(mutation[1][number_of_layer_to_mutate]) - 1
+                            0, len(configuration_to_mutate.model_configuration) - 1
                         )
 
-                        value_to_mutate = mutation[1][number_of_layer_to_mutate][
-                            number_of_value_to_mutate
-                        ]
-                        mutated_value = self._mutate_value(
-                            value_to_mutate,
-                            possible_values=self.search_space.model_layer_search_space[
-                                number_of_value_to_mutate
-                            ],
+                        key_to_mutate = random.choice(
+                            list(
+                                configuration_to_mutate.model_configuration[
+                                    number_of_layer_to_mutate
+                                ].keys()
+                            )
                         )
 
-                        # Convert tuple to list for changing values
-                        mutation = list(mutation)
-                        mutation[1][number_of_layer_to_mutate] = list(  # type: ignore This seems like a weird error since mutation[1] is already a list
-                            mutation[1][number_of_layer_to_mutate]
-                        )
+                        if key_to_mutate == "type":
+                            # TODO: We currently do not support mutating the type of a layer to anothe
+                            continue
+                        else:
+                            current_layer_type = (
+                                configuration_to_mutate.model_configuration[
+                                    number_of_layer_to_mutate
+                                ]["type"]
+                            )
 
-                        mutation[1][number_of_layer_to_mutate][  # type: ignore Same as above
-                            number_of_value_to_mutate
-                        ] = mutated_value
+                            mutated_value = self._mutate_value(
+                                configuration_to_mutate.model_configuration[
+                                    number_of_layer_to_mutate
+                                ][key_to_mutate],
+                                possible_values=self.search_space.model_search_space[
+                                    current_layer_type
+                                ][key_to_mutate],
+                            )
 
-                        # Convert list back to tuple
-                        mutation[1][number_of_layer_to_mutate] = tuple(  # type: ignore Same as above. The type system seems confused and think that this is a tuple when it is a list
-                            mutation[1][number_of_layer_to_mutate]
-                        )
-                        mutation = tuple(mutation)
+                            mutation.model_configuration[number_of_layer_to_mutate][
+                                key_to_mutate
+                            ] = mutated_value
                     # Case for adding a layer to the model
                     case x if 0.8 <= x < 0.9:
                         mutation = self._new_convolutional_layer_mutation(mutation)  # type: ignore Again the type system gets confused
@@ -290,22 +291,22 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     def _mutate_unorderable_value(self, possible_values: list[Any]) -> Any:
         return random.choice(possible_values)
 
-    def _new_convolutional_layer_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
+    def _new_layer_mutation(self, configuration: Configuration) -> Configuration:
         mutation = copy.deepcopy(configuration)
-        new_conv_layer = tuple(
-            random.choice(x) for x in self.search_space.model_layer_search_space
+        new_layer_type = random.choice(
+            list(self.search_space.model_search_space.keys())
         )
-        assert type(mutation[1]) == list
+        new_layer = {
+            key: random.choice(value)
+            for key, value in self.search_space.model_search_space[new_layer_type]
+        }
+        assert type(mutation.model_configuration) == list
         if len(mutation[1]) < self.max_num_layers:
-            mutation[1].append(new_conv_layer)
+            mutation[1].append(new_layer)
         return mutation
 
     # Remove the last convolutional layer of the model
-    def _remove_convolutional_layer_mutation(
-        self, configuration: Configuration
-    ) -> Configuration:
+    def _remove_layer_mutation(self, configuration: Configuration) -> Configuration:
         mutation = copy.deepcopy(configuration)
         assert type(mutation[1]) == list
         if len(mutation[1]) > 1:
@@ -325,13 +326,18 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     def _crossover(
         self, configuration1: Configuration, configuration2: Configuration
     ) -> Configuration:
-        new_data = (
-            random.choice((configuration1[0][0], configuration2[0][0])),
-            random.choice((configuration1[0][1], configuration2[0][1])),
-        )
+        new_data = {
+            key: random.choice(
+                [
+                    configuration1.data_configuration[key],
+                    configuration2.data_configuration[key],
+                ]
+            )
+            for key in list(configuration1.data_configuration.keys())
+        }
 
-        num_layers_model1 = len(configuration1[1])
-        num_layers_model2 = len(configuration2[1])
+        num_layers_model1 = len(configuration1.model_configuration)
+        num_layers_model2 = len(configuration2.model_configuration)
 
         if num_layers_model1 == num_layers_model2:
             num_layers_new_model = num_layers_model1
@@ -344,18 +350,20 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
         new_model = []
         for i in range(min_layers):
-            layer = (
-                random.choice((configuration1[1][i][0], configuration2[1][i][0])),
-                random.choice((configuration1[1][i][1], configuration2[1][i][1])),
-                random.choice((configuration1[1][i][2], configuration2[1][i][2])),
+            new_layer = random.choice(
+                [
+                    configuration1.model_configuration[i],
+                    configuration2.model_configuration[i],
+                ]
             )
-            new_model.append(layer)
+
+            new_model.append(new_layer)
 
         if num_layers_model1 > num_layers_model2:
             for i in range(min_layers, num_layers_new_model):
-                new_model.append(copy.deepcopy(configuration1[1][i]))
+                new_model.append(copy.deepcopy(configuration1.model_configuration[i]))
         elif num_layers_model2 > num_layers_model1:
             for i in range(min_layers, num_layers_new_model):
-                new_model.append(copy.deepcopy(configuration2[1][i]))
+                new_model.append(copy.deepcopy(configuration2.model_configuration[i]))
 
-        return (new_data, new_model)
+        return Configuration(data_configuration=new_data, model_configuration=new_model)

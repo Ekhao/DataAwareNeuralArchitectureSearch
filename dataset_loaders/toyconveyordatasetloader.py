@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 
 # Local Imports
 import datasetloader
+import data
 
 
 class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
@@ -58,6 +59,19 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         noise_files = tf.io.gfile.glob(
             f"{file_path}/EnvironmentalNoise_CNT/*{dataset_options.get('case')}*ch{dataset_options.get('channel')}*.wav"
         )
+
+        if len(normal_files) == 0:
+            raise FileNotFoundError(
+                "Normal sound files not found, please change dataset options to point to a directory containing the ToyADMOS normal sound"
+            )
+        if len(anomalous_files) == 0:
+            raise FileNotFoundError(
+                "Anomalous sound files not found, please change dataset options to point to a directory containing the ToyADMOS anomalous sound"
+            )
+        if len(noise_files) == 0:
+            raise FileNotFoundError(
+                "Noise sound files not found, please change dataset options to point to a directory containing the ToyADMOS noise sound"
+            )
 
         # Cut the amount of processed files according to the program parameters
         normal_files = normal_files[: num_files[0]]
@@ -128,31 +142,29 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             for audio, noise in anomalous_noise_zip  # type: ignore - same reason as above
         )
 
-        self.num_samples_per_class_dict = {
-            0: len(base_normal_audio),
-            1: len(base_anomalous_audio),
-        }
-
     def supervised_dataset(
-        self, data: tuple[list, ...], test_size: float = 0.2
+        self, input_data: tuple[list, ...], test_size: float = 0.2
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Assign numeric labels to normal and abnormal samples
         i = 0
         y = []
-        for d in data:
+        for d in input_data:
             y.append(tf.fill(len(d), i))
+            i += 1
 
-        X = tf.concat(data, 0)
+        # Combine the two feature and two label lists into one feature and one label tensor
+        X = tf.concat(input_data, 0)
         y = tf.concat(y, 0)
 
         X_train, X_test, y_train, y_test = train_test_split(
             X.numpy(), y.numpy(), test_size=test_size, stratify=y  # type: ignore - it seems that typing in tensorflow do not return very useful types.
         )
 
-        return X_train, X_test, y_train, y_test
+        return data.Data(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
     # This method is called to load the dataset according to a specific data configuration.
     # The base dataset (full granularity) should already have been loaded in the constructor of this class.
-    def load_dataset(
+    def configure_dataset(
         self,
         **kwargs: dict[str, Any],
     ) -> tuple[list, list]:
@@ -176,7 +188,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             delayed(librosa.resample)(
                 audio,
                 orig_sr=self.base_sr,
-                target_sr=kwargs["target_sr"],
+                target_sr=kwargs["sample_rate"],
                 res_type="kaiser_fast",
             )
             for audio in normal_audio
@@ -185,7 +197,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             delayed(librosa.resample)(
                 audio,
                 orig_sr=self.base_sr,
-                target_sr=kwargs["target_sr"],
+                target_sr=kwargs["sample_rate"],
                 res_type="kaiser_fast",
             )
             for audio in anomalous_audio
@@ -194,7 +206,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         if (normal_audio is None) or (anomalous_audio is None):
             raise TypeError("Resampling audio files failed.")
 
-        match kwargs["preprocessing_type"]:
+        match kwargs["audio_representation"]:
             case "waveform":
                 # While we can easily load data as a waveform it can not be processed by a standard convolutional block that expects image like dimensions.
                 raise NotImplementedError(
@@ -223,7 +235,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 normal_mel_spectogram = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -233,7 +245,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 anomalous_mel_spectrograms = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mel_spectrogram)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -251,7 +263,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 normal_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -262,7 +274,7 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 anomalous_mfccs = Parallel(n_jobs=self.num_cores_to_use)(
                     delayed(self._create_mfcc)(
                         audio,
-                        kwargs.get("target_sr"),
+                        kwargs.get("sample_rate"),
                         kwargs.get("frame_size"),
                         kwargs.get("hop_length"),
                         kwargs.get("num_mel_filters"),
@@ -279,9 +291,6 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
                 raise NotImplementedError(
                     "This dataloader only supports loading audio as spectrograms, mel_spectrograms and mfccs."
                 )
-
-    def num_samples_per_class(self) -> dict[int, int]:
-        return self.num_samples_per_class_dict
 
     def _librosa_load_without_sample_rate(
         self, file: str, sr: float, duration: float
