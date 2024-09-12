@@ -185,11 +185,7 @@ class DataModel:
         model.compile(
             optimizer=model_optimizer,
             loss=model_loss_function,
-            metrics=[
-                tf.keras.metrics.Accuracy(),
-                tf.keras.metrics.Precision(name="precision"),
-                tf.keras.metrics.Recall(name="recall"),
-            ],
+            metrics=["Accuracy", "Precision", "Recall"],
         )
 
         model.summary()
@@ -244,9 +240,9 @@ class DataModel:
         # We would like to get accuracy, precision, recall and model size.
         results = self.model.get_metrics_result()
 
-        self.accuracy: float = results["accuracy"]
-        self.precision: float = results["precision"]
-        self.recall: float = results["recall"]
+        self.accuracy: float = results["Accuracy"]
+        self.precision: float = results["Precision"]
+        self.recall: float = results["Recall"]
         self.model_size = self._evaluate_model_size()
 
     def better_accuracy(self, other_datamodel: DataModel) -> bool:
