@@ -130,9 +130,9 @@ def main():
         "-bs", "--batch_size", help="The batch size to use for training.", type=int
     )
     argparser.add_argument(
-        "-ams",
-        "--approximate_model_size",
-        help="An approximate size of the models to be generated. Is used to decide whether a generated model is scored well or poor on its model size.",
+        "-mms",
+        "--max_model_size",
+        help="The maximum size of the models to be generated.",
         type=int,
     )
 
@@ -207,8 +207,8 @@ def main():
         args.num_epochs = evaluation_config["num_epochs"]
     if not args.batch_size:
         args.batch_size = evaluation_config["batch_size"]
-    if not args.approximate_model_size:
-        args.approximate_model_size = evaluation_config["approximate_model_size"]
+    if not args.max_model_size:
+        args.max_model_size = evaluation_config["max_model_size"]
     if not args.population_size:
         args.population_size = evolutionary_config["population_size"]
     if not args.population_update_ratio:
@@ -273,7 +273,7 @@ def main():
             args.max_num_layers,
             args.population_update_ratio,
             args.crossover_ratio,
-            args.approximate_model_size,
+            args.max_model_size,
             args.seed,
         )
         search_strategy.initialize_search_strategy(args.initialization == "trivial")
@@ -286,15 +286,16 @@ def main():
 
     # Run the Data Aware NAS
     data_model_generator = datamodelgenerator.DataModelGenerator(
-        args.num_output_classes,
-        args.loss,
-        search_strategy,
-        dataset_loader,
-        args.test_size,
-        args.optimizer,
-        args.width_dense_layer,
-        args.num_epochs,
-        args.batch_size,
+        num_target_classes=args.num_output_classes,
+        loss_function=args.loss,
+        search_strategy=search_strategy,
+        dataset_loader=dataset_loader,
+        test_size=args.test_size,
+        optimizer=args.optimizer,
+        width_dense_layer=args.width_dense_layer,
+        num_epochs=args.num_epochs,
+        batch_size=args.batch_size,
+        max_model_size=args.max_model_size,
         **args.dataset_options,
     )
     pareto_front = data_model_generator.run_data_nas(args.num_models)

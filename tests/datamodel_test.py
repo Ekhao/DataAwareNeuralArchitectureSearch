@@ -74,6 +74,7 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
+            max_model_size=1256000,
             test_size=0.2,
             seed=52,
             frame_size=2048,
@@ -184,6 +185,7 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
+            max_model_size=1000000,
             test_size=0.2,
             seed=20,
             frame_size=2048,
@@ -192,10 +194,10 @@ class DataModelTestCase(unittest.TestCase):
             num_mfccs=13,
         )
 
-        model_size_without_training = data_model._evaluate_model_size()
+        model_size_without_training = data_model._get_model_size(data_model.model)
 
         # The model size is not completely deterministic on seperate devices, so we apply an almost equal test.
-        self.assertAlmostEqual(model_size_without_training, 329548, places=-2)
+        self.assertAlmostEqual(model_size_without_training, 326136, places=-2)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(
@@ -242,6 +244,7 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
+            max_model_size=1000000,
             test_size=0.7,
             seed=20,
             frame_size=2048,
@@ -249,6 +252,6 @@ class DataModelTestCase(unittest.TestCase):
             num_mel_filters=80,
             num_mfccs=13,
         )
-        model_size_without_training = data_model._evaluate_model_size()
+        model_size_without_training = data_model._get_model_size(data_model.model)
 
-        self.assertAlmostEqual(model_size_without_training, 364128, places=-2)
+        self.assertAlmostEqual(model_size_without_training, 361736, places=-2)

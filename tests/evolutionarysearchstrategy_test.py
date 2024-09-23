@@ -29,7 +29,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         )
         self.evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 5, 5, 0.5, 0.2, 10000, 32
+                self.search_space, 5, 5, 0.5, 0.2, 256000, 32
             )
         )
 
@@ -146,7 +146,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
                 data_model, 100000
             )
         )
-        self.assertAlmostEqual(fitness, 2.06917917)
+        self.assertAlmostEqual(fitness, 2.5)
 
     def test_generate_new_unevaluated_population(self):
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)

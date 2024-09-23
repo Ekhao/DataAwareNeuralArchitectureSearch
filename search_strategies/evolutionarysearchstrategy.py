@@ -4,7 +4,6 @@
 import random
 import copy
 import math
-import numbers
 from typing import Optional, Any
 
 # Third Party Imports
@@ -29,7 +28,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         max_num_layers: int,
         population_update_ratio: float,
         crossover_ratio: float,
-        approximate_model_size: int,
+        max_model_size: int,
         seed: Optional[int] = None,
     ) -> None:
         super().__init__(search_space, seed)
@@ -40,7 +39,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         self.population_size = population_size
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
-        self.approximate_model_size = approximate_model_size
+        self.max_model_size = max_model_size
         self.tournament_amount = max(
             1, round(population_size * population_update_ratio)
         )
@@ -92,7 +91,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
     def update_parameters(self, data_model: DataModel) -> None:
         # Add performance of the currently evaluating data model to the population
-        fitness = self._evaluate_fitness(data_model, self.approximate_model_size)
+        fitness = self._evaluate_fitness(data_model, self.max_model_size)
         self.population.append((data_model, fitness))
 
     def _pick_random_model_layer(self) -> dict:
@@ -113,12 +112,8 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
     @staticmethod
     # TODO: Maybe move this into the DataModel class
-    def _evaluate_fitness(
-        data_model: DataModel, model_size_approximate_range: int
-    ) -> float:
-        model_size_score = math.exp(
-            -data_model.model_size / model_size_approximate_range
-        )
+    def _evaluate_fitness(data_model: DataModel, max_model_size: int) -> float:
+        model_size_score = -4 if data_model.model_size > max_model_size else 1
         return (
             data_model.accuracy
             + data_model.precision
