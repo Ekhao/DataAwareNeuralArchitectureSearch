@@ -29,6 +29,7 @@ class DataModelGenerator:
         width_dense_layer: int,
         num_epochs: int,
         batch_size: int,
+        max_model_size: int,
         **data_options,
     ) -> None:
         self.num_target_classes = num_target_classes
@@ -43,6 +44,7 @@ class DataModelGenerator:
         self.batch_size = batch_size
         self.data_options = data_options
         self.seed = search_strategy.seed
+        self.max_model_size = max_model_size
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
         pareto_optimal_models = []
@@ -83,25 +85,27 @@ class DataModelGenerator:
             if configuration.data_configuration != previous_data_configuration:
                 # Create data and model from configuration
                 data_model = datamodel.DataModel.from_data_configuration(
-                    configuration,
-                    self.dataset_loader,
-                    self.num_target_classes,
-                    self.optimizer,
-                    self.loss_function,
-                    self.width_dense_layer,
-                    self.test_size,
-                    self.seed,
+                    configuration=configuration,
+                    dataset_loader=self.dataset_loader,
+                    num_target_classes=self.num_target_classes,
+                    model_optimizer=self.optimizer,
+                    model_loss_function=self.loss_function,
+                    model_width_dense_layer=self.width_dense_layer,
+                    max_model_size=self.max_model_size,
+                    test_size=self.test_size,
+                    seed=self.seed,
                     **self.data_options,
                 )
             elif previous_data != None:
                 # Use previous data and create model from configuration
                 data_model = datamodel.DataModel.from_preloaded_data(
-                    configuration,
-                    previous_data,
-                    self.num_target_classes,
-                    self.optimizer,
-                    self.loss_function,
+                    configuration=configuration,
+                    data=previous_data,
+                    num_target_classes=self.num_target_classes,
+                    model_optimizer=self.optimizer,
+                    model_loss_function=self.loss_function,
                     model_width_dense_layer=self.width_dense_layer,
+                    max_model_size=self.max_model_size,
                     seed=self.seed,
                 )
             else:

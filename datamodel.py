@@ -40,6 +40,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
+        max_model_size: int,
         test_size: float,
         seed: Optional[int] = None,
         **data_options,
@@ -59,6 +60,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
+                max_model_size,
             )
         elif isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
@@ -68,6 +70,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
+                max_model_size,
             )
         else:
             raise TypeError(
@@ -91,6 +94,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
+        max_model_size: int,
         seed: Optional[int] = None,
     ) -> DataModel:
 
@@ -102,6 +106,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
+                max_model_size,
             )
         if isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
@@ -111,6 +116,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
+                max_model_size,
             )
 
         return cls(
@@ -142,6 +148,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
+        max_model_size,
     ) -> Optional[tf.keras.Model]:
         model = tf.keras.Sequential()
 
@@ -190,7 +197,25 @@ class DataModel:
 
         model.summary()
 
+        model_size = DataModel._get_model_size(model)
+        if model_size > max_model_size:
+            print(
+                f"Model size too large at {model_size} bytes and a max model size of {max_model_size} bytes."
+            )
+            model = None
+
         return model
+
+    @staticmethod
+    def _get_model_size(model):
+        total_bytes = 0
+        for layer in model.layers:
+            for weight in layer.weights:
+                # Get the weight values
+                weight_values = weight.numpy()
+                # Get the number of bytes for each weight tensor
+                total_bytes += weight_values.nbytes
+        return total_bytes
 
     def evaluate_data_model(self, num_epochs: int, batch_size: int) -> None:
         if isinstance(self.data.X_train, np.ndarray):
@@ -275,33 +300,3 @@ class DataModel:
         del self.data
         del self.model
         return
-
-    def _evaluate_model_size(self) -> int:
-        unique_extension = self.seed
-        save_directory = pathlib.Path("./tmp/")
-        save_directory.mkdir(exist_ok=True)
-
-        try:
-            converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
-        except Exception as e:
-            print(
-                f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later."
-            )
-            return 2000000001
-        try:
-            tflite_model = converter.convert()
-        except struct.error:
-            return 2000000000
-        except Exception as e:
-            print(
-                f"{e}\nSaving model size as max size + 1 (2000000001) for this to be identified later."
-            )
-            return 2000000001
-
-        tflite_model_file = save_directory / f"tflite_model-{unique_extension}"
-
-        model_size = tflite_model_file.write_bytes(tflite_model)
-
-        tflite_model_file.unlink()
-
-        return model_size

@@ -97,7 +97,7 @@
         "evaluation_config": {
             "num_epochs": 20,
             "batch_size": 32,
-            "approximate_model_size": 100000
+            "max_model_size": 256000
         },
         "evolutionary_config": {
             "population_size": 10,
