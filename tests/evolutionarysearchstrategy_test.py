@@ -125,7 +125,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         data_model.accuracy = 0.91
         data_model.precision = 0.2
         data_model.recall = 0.5
-        data_model.model_size = 64266
+        data_model.memory_consumption = 64266
 
         self.evolutionary_search_strategy.update_parameters(data_model)
         self.assertTrue(
@@ -140,10 +140,10 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         data_model.accuracy = 0.4
         data_model.precision = 0.5
         data_model.recall = 0.6
-        data_model.model_size = 56356
+        data_model.memory_consumption = 156356
         fitness = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy._evaluate_fitness(
-                data_model, 100000
+                data_model, 170000
             )
         )
         self.assertAlmostEqual(fitness, 2.5)

@@ -21,7 +21,7 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
     ) -> None:
         self.hf_dataset = datasets.load_dataset(
             path="Harvard-Edge/Wake-Vision",
-            cache_dir="/dtu-compute/emjn/huggingface/datasets",  # TODO: Make this a configurable option
+            cache_dir="/work3/emjn/huggingface/datasets",  # TODO: Make this a configurable option
         )
         self.hf_dataset["original_train_quality"] = self.hf_dataset["train_quality"]
         self.hf_dataset["original_validation"] = self.hf_dataset["validation"]

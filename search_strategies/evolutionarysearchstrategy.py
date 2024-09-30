@@ -28,7 +28,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         max_num_layers: int,
         population_update_ratio: float,
         crossover_ratio: float,
-        max_model_size: int,
+        max_memory_consumption: int,
         seed: Optional[int] = None,
     ) -> None:
         super().__init__(search_space, seed)
@@ -39,7 +39,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         self.population_size = population_size
         self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
-        self.max_model_size = max_model_size
+        self.max_memory_consumption = max_memory_consumption
         self.tournament_amount = max(
             1, round(population_size * population_update_ratio)
         )
@@ -91,7 +91,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
     def update_parameters(self, data_model: DataModel) -> None:
         # Add performance of the currently evaluating data model to the population
-        fitness = self._evaluate_fitness(data_model, self.max_model_size)
+        fitness = self._evaluate_fitness(data_model, self.max_memory_consumption)
         self.population.append((data_model, fitness))
 
     def _pick_random_model_layer(self) -> dict:
@@ -111,14 +111,15 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         return layer
 
     @staticmethod
-    # TODO: Maybe move this into the DataModel class
-    def _evaluate_fitness(data_model: DataModel, max_model_size: int) -> float:
-        model_size_score = -4 if data_model.model_size > max_model_size else 1
+    def _evaluate_fitness(data_model: DataModel, max_memory_consumption: int) -> float:
+        memory_score = (
+            -4 if data_model.memory_consumption > max_memory_consumption else 1
+        )
         return (
             data_model.accuracy
             + data_model.precision
             + data_model.recall
-            + model_size_score
+            + memory_score
         )
 
     def _generate_new_unevaluated_configurations(self) -> None:

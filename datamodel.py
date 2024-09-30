@@ -2,8 +2,7 @@
 
 # Standard Library Imports
 from __future__ import annotations
-import pathlib
-import struct
+import sys
 from typing import Any, Optional
 
 # Third Party Imports
@@ -40,7 +39,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
-        max_model_size: int,
+        max_memory_consumption: int,
         test_size: float,
         seed: Optional[int] = None,
         **data_options,
@@ -60,7 +59,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
-                max_model_size,
+                max_memory_consumption,
             )
         elif isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
@@ -70,7 +69,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
-                max_model_size,
+                max_memory_consumption,
             )
         else:
             raise TypeError(
@@ -94,7 +93,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
-        max_model_size: int,
+        max_memory_consumption: int,
         seed: Optional[int] = None,
     ) -> DataModel:
 
@@ -106,7 +105,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
-                max_model_size,
+                max_memory_consumption,
             )
         if isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
@@ -116,7 +115,7 @@ class DataModel:
                 model_optimizer,
                 model_loss_function,
                 model_width_dense_layer,
-                max_model_size,
+                max_memory_consumption,
             )
 
         return cls(
@@ -148,7 +147,7 @@ class DataModel:
         model_optimizer: tf.keras.optimizers.Optimizer,
         model_loss_function: tf.keras.losses.Loss,
         model_width_dense_layer: int,
-        max_model_size,
+        max_memory_consumption,
     ) -> Optional[tf.keras.Model]:
         model = tf.keras.Sequential()
 
@@ -198,9 +197,10 @@ class DataModel:
         model.summary()
 
         model_size = DataModel._get_model_size(model)
-        if model_size > max_model_size:
+
+        if model_size > max_memory_consumption:
             print(
-                f"Model size too large at {model_size} bytes and a max model size of {max_model_size} bytes."
+                f"Model size too large at {model_size} bytes and a max memory consumption of {max_memory_consumption} bytes."
             )
             model = None
 
@@ -216,6 +216,16 @@ class DataModel:
                 # Get the number of bytes for each weight tensor
                 total_bytes += weight_values.nbytes
         return total_bytes
+
+    @staticmethod
+    def _get_data_size(data):
+        if isinstance(data, np.ndarray):
+            size_in_bytes = data[0].nbytes
+        elif isinstance(data, tf.data.Dataset):
+            sample = next(iter(data.as_numpy_iterator()))
+            serialized_sample = tf.io.serialize_tensor(tf.convert_to_tensor(sample))
+            size_in_bytes = sys.getsizeof(serialized_sample.numpy())
+        return size_in_bytes
 
     def evaluate_data_model(self, num_epochs: int, batch_size: int) -> None:
         if isinstance(self.data.X_train, np.ndarray):
@@ -268,7 +278,9 @@ class DataModel:
         self.accuracy: float = results["Accuracy"]
         self.precision: float = results["Precision"]
         self.recall: float = results["Recall"]
-        self.model_size = self._evaluate_model_size()
+        self.memory_consumption = self._get_model_size(
+            self.model
+        ) + self._get_data_size(self.data.X_train)
 
     def better_accuracy(self, other_datamodel: DataModel) -> bool:
         return self.accuracy > other_datamodel.accuracy
@@ -279,8 +291,8 @@ class DataModel:
     def better_recall(self, other_datamodel: DataModel) -> bool:
         return self.recall > other_datamodel.recall
 
-    def better_model_size(self, other_datamodel: DataModel) -> bool:
-        return self.model_size < other_datamodel.model_size
+    def better_memory_consumption(self, other_datamodel: DataModel) -> bool:
+        return self.memory_consumption < other_datamodel.memory_consumption
 
     def better_data_model(self, other_datamodel: DataModel) -> bool:
         return bool(
@@ -290,7 +302,7 @@ class DataModel:
                         self.better_accuracy(other_datamodel),
                         self.better_precision(other_datamodel),
                         self.better_recall(other_datamodel),
-                        self.better_model_size(other_datamodel),
+                        self.better_memory_consumption(other_datamodel),
                     ]
                 )
             )

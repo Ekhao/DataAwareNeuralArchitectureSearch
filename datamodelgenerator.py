@@ -29,7 +29,7 @@ class DataModelGenerator:
         width_dense_layer: int,
         num_epochs: int,
         batch_size: int,
-        max_model_size: int,
+        max_memory_consumption: int,
         **data_options,
     ) -> None:
         self.num_target_classes = num_target_classes
@@ -44,7 +44,7 @@ class DataModelGenerator:
         self.batch_size = batch_size
         self.data_options = data_options
         self.seed = search_strategy.seed
-        self.max_model_size = max_model_size
+        self.max_memory_consumption = max_memory_consumption
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
         pareto_optimal_models = []
@@ -91,7 +91,7 @@ class DataModelGenerator:
                     model_optimizer=self.optimizer,
                     model_loss_function=self.loss_function,
                     model_width_dense_layer=self.width_dense_layer,
-                    max_model_size=self.max_model_size,
+                    max_memory_consumption=self.max_memory_consumption,
                     test_size=self.test_size,
                     seed=self.seed,
                     **self.data_options,
@@ -105,7 +105,7 @@ class DataModelGenerator:
                     model_optimizer=self.optimizer,
                     model_loss_function=self.loss_function,
                     model_width_dense_layer=self.width_dense_layer,
-                    max_model_size=self.max_model_size,
+                    max_memory_consumption=self.max_memory_consumption,
                     seed=self.seed,
                 )
             else:
