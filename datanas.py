@@ -130,10 +130,15 @@ def main():
         "-bs", "--batch_size", help="The batch size to use for training.", type=int
     )
     argparser.add_argument(
-        "-mmc",
-        "--max_memory_consumption",
-        help="The maximum memory consumption allowed by data and models",
+        "-mrc",
+        "--max_ram_consumption",
+        help="The maximum ram consumption allowed by data and intermediate representations",
         type=int,
+    )
+    argparser.add_argument(
+        "-mfc",
+        "--max_flash_consumption",
+        help="The maximum flash consumption allowed for models",
     )
 
     # Evolutionary Parameters
@@ -207,8 +212,10 @@ def main():
         args.num_epochs = evaluation_config["num_epochs"]
     if not args.batch_size:
         args.batch_size = evaluation_config["batch_size"]
-    if not args.max_memory_consumption:
-        args.max_memory_consumption = evaluation_config["max_memory_consumption"]
+    if not args.max_ram_consumption:
+        args.max_ram_consumption = evaluation_config["max_ram_consumption"]
+    if not args.max_flash_consumption:
+        args.max_flash_consumption = evaluation_config["max_flash_consumption"]
     if not args.population_size:
         args.population_size = evolutionary_config["population_size"]
     if not args.population_update_ratio:
@@ -273,7 +280,8 @@ def main():
             args.max_num_layers,
             args.population_update_ratio,
             args.crossover_ratio,
-            args.max_memory_consumption,
+            args.max_ram_consumption,
+            args.max_flash_consumption,
             args.seed,
         )
         search_strategy.initialize_search_strategy(args.initialization == "trivial")
@@ -295,7 +303,8 @@ def main():
         width_dense_layer=args.width_dense_layer,
         num_epochs=args.num_epochs,
         batch_size=args.batch_size,
-        max_memory_consumption=args.max_memory_consumption,
+        max_ram_consumption=args.max_ram_consumption,
+        max_flash_consumption=args.max_flash_consumption,
         **args.dataset_options,
     )
     pareto_front = data_model_generator.run_data_nas(args.num_models)

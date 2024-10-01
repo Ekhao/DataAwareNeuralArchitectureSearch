@@ -1,11 +1,11 @@
 # A base class for dataset loaders for the Data Aware Neural Architecture Search. Used as a template for creating other dataset loaders.
 
 # Standard Library Imports
-from abc import ABC, abstractmethod
-from typing import Any, Optional
+from abc import ABC
+from typing import Any
 
-# Third Party Imports
-import numpy as np
+# Local Imports
+from data import Data
 
 
 class DatasetLoader(ABC):
@@ -19,5 +19,5 @@ class DatasetLoader(ABC):
 
     def supervised_dataset(
         self, *data: Any, test_size: float
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
+    ) -> Data:  # type: ignore This is an abstract base class that is not supposed to provide the required functionality.
         pass

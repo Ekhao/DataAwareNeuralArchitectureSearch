@@ -29,7 +29,8 @@ class DataModelGenerator:
         width_dense_layer: int,
         num_epochs: int,
         batch_size: int,
-        max_memory_consumption: int,
+        max_ram_consumption: int,
+        max_flash_consumption: int,
         **data_options,
     ) -> None:
         self.num_target_classes = num_target_classes
@@ -44,7 +45,8 @@ class DataModelGenerator:
         self.batch_size = batch_size
         self.data_options = data_options
         self.seed = search_strategy.seed
-        self.max_memory_consumption = max_memory_consumption
+        self.max_ram_consumption = max_ram_consumption
+        self.max_flash_consumption = max_flash_consumption
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
         pareto_optimal_models = []
@@ -91,7 +93,8 @@ class DataModelGenerator:
                     model_optimizer=self.optimizer,
                     model_loss_function=self.loss_function,
                     model_width_dense_layer=self.width_dense_layer,
-                    max_memory_consumption=self.max_memory_consumption,
+                    max_ram_consumption=self.max_ram_consumption,
+                    max_flash_consumption=self.max_flash_consumption,
                     test_size=self.test_size,
                     seed=self.seed,
                     **self.data_options,
@@ -105,7 +108,8 @@ class DataModelGenerator:
                     model_optimizer=self.optimizer,
                     model_loss_function=self.loss_function,
                     model_width_dense_layer=self.width_dense_layer,
-                    max_memory_consumption=self.max_memory_consumption,
+                    max_ram_consumption=self.max_ram_consumption,
+                    max_flash_consumption=self.max_flash_consumption,
                     seed=self.seed,
                 )
             else:
@@ -113,10 +117,13 @@ class DataModelGenerator:
                     "Configuration was same as previous but no previous data was loaded. This should not happen."
                 )
 
-            # Some data and model configurations are infeasible. In this case the model created in the data model will be None.
+            # Some data and model configurations are infeasible. In this case the model or data created in the data model will be None.
             # If we create an infeasible datamodel we simply skip to proposing the next model
             if data_model.model == None:
                 print("Infeasible model generated. Skipping to next configuration...")
+                continue
+            if data_model.data == None:
+                print("Infeasible data generated. Skipping to next configuration...")
                 continue
 
             print("Evaluating performance of data and model")
