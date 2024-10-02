@@ -92,8 +92,6 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
         input_shape = (resolution, resolution, 3)
 
         if train:
-            # Repeat indefinitely and shuffle the dataset
-            ds_split = ds_split.shuffle(1000, reshuffle_each_iteration=True)
             # inception crop
             ds_split = ds_split.map(
                 self._inception_crop, num_parallel_calls=tf.data.AUTOTUNE

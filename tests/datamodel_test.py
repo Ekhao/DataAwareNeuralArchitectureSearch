@@ -22,8 +22,8 @@ class DataModelTestCase(unittest.TestCase):
         )
         dataset_loader.supervised_dataset = unittest.mock.Mock(
             return_value=data.Data(
-                X_train=tf.random.uniform((500, 79, 60, 60)).numpy(),
-                X_test=tf.random.uniform((500, 79, 60, 60)).numpy(),
+                X_train=tf.random.uniform((500, 10, 60, 60)).numpy(),
+                X_test=tf.random.uniform((500, 10, 60, 60)).numpy(),
                 y_train=tf.random.uniform((500,)).numpy(),
                 y_test=tf.random.uniform((500,)).numpy(),
             )
@@ -61,8 +61,11 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
-            max_memory_consumption=1256000,
+            max_ram_consumption=256000,
+            max_flash_consumption=1000000,
             test_size=0.2,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
             seed=52,
             frame_size=2048,
             hop_length=512,
@@ -73,60 +76,53 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.98
         data_model1.precision = 0.7
         data_model1.recall = 0.99
-        data_model1.memory_consumption = 3954353
+        data_model1.ram_consumption = 3954353
+        data_model1.flash_consumption = 3943354
         data_model2 = copy.deepcopy(data_model1)
         data_model2.accuracy = 0.9
         data_model2.precision = 0.69
         data_model2.recall = 0.89
-        data_model2.memory_consumption = 4054353
+        data_model2.ram_consumption = 4054353
+        data_model2.flash_consumption = 3943354
 
         self.assertTrue(data_model1.better_data_model(data_model2))
 
     def test_not_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.60
         data_model1.precision = 0.56
         data_model1.recall = 0.82
-        data_model1.memory_consumption = 3954353
+        data_model1.ram_consumption = 3954353
+        data_model1.flash_consumption = 3943354
         data_model2 = copy.deepcopy(data_model1)
         data_model2.accuracy = 0.02
         data_model2.precision = 0.55
         data_model2.recall = 0.82
-        data_model2.memory_consumption = 4054353
+        data_model2.ram_consumption = 4054353
+        data_model2.flash_consumption = 3943354
         self.assertFalse(data_model2.better_data_model(data_model1))
 
     def test_better_configuration_model_size(self):
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.9
         data_model1.precision = 0.8
         data_model1.recall = 0.8
-        data_model1.memory_consumption = 6954353
+        data_model1.ram_consumption = 6954353
+        data_model1.flash_consumption = 3943354
         data_model2 = copy.deepcopy(data_model1)
         data_model2.accuracy = 0.5
         data_model2.precision = 0.55
         data_model2.recall = 0.4
-        data_model2.memory_consumption = 4054353
+        data_model2.ram_consumption = 4054353
+        data_model2.flash_consumption = 3943321
         self.assertTrue(data_model2.better_data_model(data_model1))
 
     def test_evaluate_model_size(self):
-        search_space = searchspace.SearchSpace(
-            data_search_space={
-                "sample_rate": [48000, 24000, 12000, 6000, 3000, 1500, 750, 325],
-                "audio_representation": ["spectrogram", "mel-spectrogram", "mfcc"],
-            },
-            model_search_space={
-                "conv_layer": {
-                    "filters": [2, 4, 8, 16, 32, 64, 128],
-                    "kernel_size": [3, 5],
-                    "activation": ["relu", "sigmoid"],
-                }
-            },
-        )
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(
             return_value=([None, None], [None, None])
@@ -172,8 +168,11 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
-            max_memory_consumption=1000000,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
             test_size=0.2,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
             seed=20,
             frame_size=2048,
             hop_length=512,
@@ -181,10 +180,11 @@ class DataModelTestCase(unittest.TestCase):
             num_mfccs=13,
         )
 
-        model_size_without_training = data_model._get_model_size(data_model.model)
+        model_size_without_training = data_model._get_model_size(
+            data_model.model, model_dtype_multiplier=1
+        )
 
-        # The model size is not completely deterministic on seperate devices, so we apply an almost equal test.
-        self.assertAlmostEqual(model_size_without_training, 326136, places=-2)
+        self.assertEqual(model_size_without_training, 81534)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(
@@ -231,17 +231,22 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
-            max_memory_consumption=1000000,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
             test_size=0.7,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=2,
             seed=20,
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
             num_mfccs=13,
         )
-        model_size_without_training = data_model._get_model_size(data_model.model)
+        model_size_without_training = data_model._get_model_size(
+            data_model.model, model_dtype_multiplier=2
+        )
 
-        self.assertAlmostEqual(model_size_without_training, 361736, places=-2)
+        self.assertEqual(model_size_without_training, 180868)
 
     def test_get_data_size(self):
         dataset_loader = unittest.mock.MagicMock()
@@ -275,14 +280,19 @@ class DataModelTestCase(unittest.TestCase):
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
-            max_memory_consumption=1000000,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
             test_size=0.7,
+            data_dtype_multiplier=2,
+            model_dtype_multiplier=1,
             seed=20,
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
             num_mfccs=13,
         )
-        data_size = data_model._get_data_size(data_model.data.X_train)
+        data_size = data_model._get_data_size(
+            data_model.data.X_train, data_dtype_multiplier=2
+        )
 
-        self.assertAlmostEqual(data_size, 1137600, places=-2)
+        self.assertEqual(data_size, 568800)

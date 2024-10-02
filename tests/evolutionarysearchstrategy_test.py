@@ -29,7 +29,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         )
         self.evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 5, 5, 0.5, 0.2, 256000, 32
+                self.search_space, 5, 5, 0.5, 0.2, 256000, 1000000, 32
             )
         )
 
@@ -125,7 +125,8 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
         data_model.accuracy = 0.91
         data_model.precision = 0.2
         data_model.recall = 0.5
-        data_model.memory_consumption = 64266
+        data_model.ram_consumption = 64266
+        data_model.flash_consumption = 953000
 
         self.evolutionary_search_strategy.update_parameters(data_model)
         self.assertTrue(
@@ -133,20 +134,21 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
                 self.evolutionary_search_strategy.population[0][0], datamodel.DataModel
             )
         )
-        self.assertTrue(0 <= self.evolutionary_search_strategy.population[0][1] <= 3)
+        self.assertTrue(0 <= self.evolutionary_search_strategy.population[0][1] <= 5)
 
     def test_evaluate_fitness(self):
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
         data_model.accuracy = 0.4
         data_model.precision = 0.5
         data_model.recall = 0.6
-        data_model.memory_consumption = 156356
+        data_model.ram_consumption = 156356
+        data_model.flash_consumption = 743125
         fitness = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy._evaluate_fitness(
-                data_model, 170000
+                data_model, 170000, 1000000
             )
         )
-        self.assertAlmostEqual(fitness, 2.5)
+        self.assertAlmostEqual(fitness, 3.5)
 
     def test_generate_new_unevaluated_population(self):
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
@@ -266,7 +268,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def test_generate_new_unevaluated_population_other_seed2(self):
         evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 5, 5, 0.5, 0.2, 10000, 40
+                self.search_space, 5, 5, 0.5, 0.2, 10000, 20000, 40
             )
         )
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
@@ -384,7 +386,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def test_generate_new_unevaluated_population_other_seed3(self):
         evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 5, 5, 0.5, 0.2, 10000, 55
+                self.search_space, 5, 5, 0.5, 0.2, 10000, 20000, 55
             )
         )
         data_model = unittest.mock.MagicMock(spec=datamodel.DataModel)
@@ -616,7 +618,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def test_crossover(self):
         evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 70
+                self.search_space, 2, 5, 0.5, 0.2, 10000, 20000, 70
             )
         )
         configuration_1 = Configuration(
@@ -708,7 +710,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def test_crossover_different_length(self):
         evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 2, 5, 0.5, 0.2, 10000, 14
+                self.search_space, 2, 5, 0.5, 0.2, 10000, 20000, 14
             )
         )
 
@@ -822,7 +824,7 @@ class EvolutionarySearchStrategyTestCase(unittest.TestCase):
     def test_create_crossovers(self):
         evolutionary_search_strategy = (
             evolutionarysearchstrategy.EvolutionarySearchStrategy(
-                self.search_space, 10, 5, 0.5, 0.2, 10000, 2
+                self.search_space, 10, 5, 0.5, 0.2, 10000, 20000, 2
             )
         )
         evolutionary_search_strategy.initialize_search_strategy(
