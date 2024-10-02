@@ -98,7 +98,9 @@
             "num_epochs": 20,
             "batch_size": 32,
             "max_ram_consumption": 256000,
-            "max_flash_consumption": 1000000
+            "max_flash_consumption": 1000000,
+            "data_dtype_multiplier": 1,
+            "model_dtype_multiplier": 1
         },
         "evolutionary_config": {
             "population_size": 10,

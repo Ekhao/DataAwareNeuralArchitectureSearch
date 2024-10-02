@@ -22,12 +22,16 @@ class DataModel:
         configuration: Configuration,
         data: Data | tf.data.Dataset,
         model: tf.keras.Model,
+        data_dtype_multiplier: int,
+        model_dtype_multiplier: int,
         seed=None,
     ) -> None:
         self.configuration = configuration
         self.data = data
         self.model = model
         self.seed = seed
+        self.data_dtype_multiplier = data_dtype_multiplier
+        self.model_dtype_multiplier = model_dtype_multiplier
 
     # A constructor to use when both data and model need to be created.
     @classmethod
@@ -42,6 +46,8 @@ class DataModel:
         max_ram_consumption: int,
         max_flash_consumption: int,
         test_size: float,
+        data_dtype_multiplier: int,
+        model_dtype_multiplier: int,
         seed: Optional[int] = None,
         **data_options,
     ) -> DataModel:
@@ -50,6 +56,7 @@ class DataModel:
             dataset_loader,
             test_size,
             max_ram_consumption,
+            data_dtype_multiplier,
             **data_options,
         )
 
@@ -64,6 +71,8 @@ class DataModel:
                     model_width_dense_layer,
                     max_ram_consumption,
                     max_flash_consumption,
+                    data_dtype_multiplier,
+                    model_dtype_multiplier,
                 )
             elif isinstance(data.X_train, tf.data.Dataset):
                 model = cls.create_model(
@@ -75,6 +84,8 @@ class DataModel:
                     model_width_dense_layer,
                     max_ram_consumption,
                     max_flash_consumption,
+                    data_dtype_multiplier,
+                    model_dtype_multiplier,
                 )
             else:
                 raise TypeError(
@@ -87,6 +98,8 @@ class DataModel:
             configuration,
             data,
             model,
+            data_dtype_multiplier,
+            model_dtype_multiplier,
             seed,
         )
 
@@ -102,6 +115,8 @@ class DataModel:
         model_width_dense_layer: int,
         max_ram_consumption: int,
         max_flash_consumption: int,
+        data_dtype_multiplier: int,
+        model_dtype_multiplier: int,
         seed: Optional[int] = None,
     ) -> DataModel:
 
@@ -115,6 +130,8 @@ class DataModel:
                 model_width_dense_layer,
                 max_ram_consumption,
                 max_flash_consumption,
+                data_dtype_multiplier,
+                model_dtype_multiplier,
             )
         if isinstance(data.X_train, tf.data.Dataset):
             model = cls.create_model(
@@ -126,12 +143,16 @@ class DataModel:
                 model_width_dense_layer,
                 max_ram_consumption,
                 max_flash_consumption,
+                data_dtype_multiplier,
+                model_dtype_multiplier,
             )
 
         return cls(
             configuration,
             data,
             model,
+            data_dtype_multiplier,
+            model_dtype_multiplier,
             seed,
         )
 
@@ -141,6 +162,7 @@ class DataModel:
         dataset_loader: datasetloader.DatasetLoader,
         test_size: float,
         max_ram_consumption: int,
+        data_dtype_multiplier: int,
         **options,
     ) -> Data:
         dataset = dataset_loader.configure_dataset(
@@ -150,7 +172,9 @@ class DataModel:
 
         dataset = dataset_loader.supervised_dataset(dataset, test_size=test_size)
 
-        data_ram_consumption = DataModel._get_data_size(dataset.X_train)
+        data_ram_consumption = DataModel._get_data_size(
+            dataset.X_train, data_dtype_multiplier
+        )
 
         if data_ram_consumption > max_ram_consumption:
             print(
@@ -170,6 +194,8 @@ class DataModel:
         model_width_dense_layer: int,
         max_ram_consumption: int,
         max_flash_consumption: int,
+        data_dtype_multiplier: int,
+        model_dtype_multiplier: int,
     ) -> Optional[tf.keras.Model]:
         model = tf.keras.Sequential()
 
@@ -219,7 +245,7 @@ class DataModel:
         model.summary()
 
         # Check that model can fit in max flash consumption
-        model_size = DataModel._get_model_size(model)
+        model_size = DataModel._get_model_size(model, model_dtype_multiplier)
 
         if model_size > max_flash_consumption:
             print(
@@ -228,38 +254,46 @@ class DataModel:
             model = None
 
         # Check that any intermediate representation can fit in max ram consumption
-        max_tensor_memory = DataModel._get_max_internal_representation_size(model)
-
-        if max_tensor_memory > max_ram_consumption:
-            print(
-                f"The maximum internal tensor representation will not be able to fit in maximum ram consumption. Using {max_tensor_memory} out of {max_ram_consumption}"
+        if model != None:
+            max_tensor_memory = DataModel._get_max_internal_representation_size(
+                model, data_dtype_multiplier
             )
-            model = None
+
+            if max_tensor_memory > max_ram_consumption:
+                print(
+                    f"The maximum internal tensor representation will not be able to fit in maximum ram consumption. Using {max_tensor_memory} out of {max_ram_consumption}"
+                )
+                model = None
 
         return model
 
     @staticmethod
-    def _get_model_size(model):
+    def _get_model_size(model, model_dtype_multiplier: int):
         total_bytes = 0
         for layer in model.layers:
             for weight in layer.weights:
                 # Get the weight values
                 weight_values = weight.numpy()
                 # Get the number of bytes for each weight tensor
-                total_bytes += weight_values.nbytes
+                total_bytes += weight_values.size * model_dtype_multiplier
         return total_bytes
 
     @staticmethod
-    def _get_data_size(data):
+    def _get_data_size(data, data_dtype_multiplier: int):
         if isinstance(data, np.ndarray):
-            size_in_bytes = data[0].nbytes
+            size_of_sample = data[0].size
+            size_in_bytes = size_of_sample * data_dtype_multiplier
         elif isinstance(data, tf.data.Dataset):
+            data = data.unbatch()
             sample = next(iter(data.as_numpy_iterator()))
-            serialized_sample = tf.io.serialize_tensor(tf.convert_to_tensor(sample))
-            size_in_bytes = sys.getsizeof(serialized_sample.numpy())
+            size_of_sample = tf.size(
+                sample[0]
+            )  # 0 to select input features and not output targets
+            size_in_bytes = size_of_sample * data_dtype_multiplier
         return size_in_bytes
 
-    def _get_max_internal_representation_size(model):
+    @staticmethod
+    def _get_max_internal_representation_size(model, data_dtype_multiplier: int):
         max_tensor_memory = 0
 
         for layer in model.layers:
@@ -267,15 +301,8 @@ class DataModel:
             output_shape = layer.output.shape
             input_size = np.prod(input_shape[1:])  # Exclude the batch size
             output_size = np.prod(output_shape[1:])
-            if layer.input.dtype == "float32" and layer.output.dtype == "float32":
-                input_memory = input_size * 4
-                output_memory = output_size * 4
-            else:
-                # TODO need to work on this since deployment 32 bit floating point values likely won't be used in real-life deployments
-                raise NotImplementedError(
-                    "The program currently does not support intermediate tensors not stored in 32 bit floating points."
-                )
-
+            input_memory = input_size * data_dtype_multiplier
+            output_memory = output_size * data_dtype_multiplier
             tensor_memory = input_memory + output_memory
             max_tensor_memory = max(max_tensor_memory, tensor_memory)
 
@@ -333,10 +360,14 @@ class DataModel:
         self.precision: float = results["Precision"]
         self.recall: float = results["Recall"]
         self.ram_consumption = max(
-            self._get_data_size(self.data.X_train),
-            self._get_max_internal_representation_size(self.model),
+            self._get_data_size(self.data.X_train, self.data_dtype_multiplier),
+            self._get_max_internal_representation_size(
+                self.model, self.data_dtype_multiplier
+            ),
         )
-        self.flash_consumption = self._get_model_size(self.model)
+        self.flash_consumption = self._get_model_size(
+            self.model, self.model_dtype_multiplier
+        )
 
     def better_accuracy(self, other_datamodel: DataModel) -> bool:
         return self.accuracy > other_datamodel.accuracy

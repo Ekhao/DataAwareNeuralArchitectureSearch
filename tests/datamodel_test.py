@@ -64,6 +64,8 @@ class DataModelTestCase(unittest.TestCase):
             max_ram_consumption=256000,
             max_flash_consumption=1000000,
             test_size=0.2,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
             seed=52,
             frame_size=2048,
             hop_length=512,
@@ -74,7 +76,7 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.98
         data_model1.precision = 0.7
         data_model1.recall = 0.99
@@ -91,7 +93,7 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_not_better_configuration(self):
         # No need to give any real values to the data model for this test.
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.60
         data_model1.precision = 0.56
         data_model1.recall = 0.82
@@ -106,7 +108,7 @@ class DataModelTestCase(unittest.TestCase):
         self.assertFalse(data_model2.better_data_model(data_model1))
 
     def test_better_configuration_model_size(self):
-        data_model1 = datamodel.DataModel(None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
+        data_model1 = datamodel.DataModel(None, None, None, None, None, None)  # type: ignore This is a test for other functionality and as such we do not need to provide real values for this constructor
         data_model1.accuracy = 0.9
         data_model1.precision = 0.8
         data_model1.recall = 0.8
@@ -169,6 +171,8 @@ class DataModelTestCase(unittest.TestCase):
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
             test_size=0.2,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
             seed=20,
             frame_size=2048,
             hop_length=512,
@@ -176,10 +180,11 @@ class DataModelTestCase(unittest.TestCase):
             num_mfccs=13,
         )
 
-        model_size_without_training = data_model._get_model_size(data_model.model)
+        model_size_without_training = data_model._get_model_size(
+            data_model.model, model_dtype_multiplier=1
+        )
 
-        # The model size is not completely deterministic on seperate devices, so we apply an almost equal test.
-        self.assertAlmostEqual(model_size_without_training, 326136, places=-2)
+        self.assertEqual(model_size_without_training, 81534)
 
     def test_evaluate_model_size2(self):
         search_space = searchspace.SearchSpace(
@@ -229,15 +234,19 @@ class DataModelTestCase(unittest.TestCase):
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
             test_size=0.7,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=2,
             seed=20,
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
             num_mfccs=13,
         )
-        model_size_without_training = data_model._get_model_size(data_model.model)
+        model_size_without_training = data_model._get_model_size(
+            data_model.model, model_dtype_multiplier=2
+        )
 
-        self.assertAlmostEqual(model_size_without_training, 361736, places=-2)
+        self.assertEqual(model_size_without_training, 180868)
 
     def test_get_data_size(self):
         dataset_loader = unittest.mock.MagicMock()
@@ -274,12 +283,16 @@ class DataModelTestCase(unittest.TestCase):
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
             test_size=0.7,
+            data_dtype_multiplier=2,
+            model_dtype_multiplier=1,
             seed=20,
             frame_size=2048,
             hop_length=512,
             num_mel_filters=80,
             num_mfccs=13,
         )
-        data_size = data_model._get_data_size(data_model.data.X_train)
+        data_size = data_model._get_data_size(
+            data_model.data.X_train, data_dtype_multiplier=2
+        )
 
-        self.assertAlmostEqual(data_size, 1137600, places=-2)
+        self.assertEqual(data_size, 568800)

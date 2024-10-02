@@ -140,6 +140,16 @@ def main():
         "--max_flash_consumption",
         help="The maximum flash consumption allowed for models",
     )
+    argparser.add_argument(
+        "-ddm",
+        "--data_dtype_multiplier",
+        help="The amount of bytes that the datatype which input data is stored in is expected to take",
+    )
+    argparser.add_argument(
+        "-mdm",
+        "--model_dtype_multiplier",
+        help="The amount of bytes that the datatype which model parameters are stored in is expected to take",
+    )
 
     # Evolutionary Parameters
     argparser.add_argument(
@@ -216,6 +226,10 @@ def main():
         args.max_ram_consumption = evaluation_config["max_ram_consumption"]
     if not args.max_flash_consumption:
         args.max_flash_consumption = evaluation_config["max_flash_consumption"]
+    if not args.data_dtype_multiplier:
+        args.data_dtype_multiplier = evaluation_config["data_dtype_multiplier"]
+    if not args.model_dtype_multiplier:
+        args.model_dtype_multiplier = evaluation_config["model_dtype_multiplier"]
     if not args.population_size:
         args.population_size = evolutionary_config["population_size"]
     if not args.population_update_ratio:
@@ -238,17 +252,17 @@ def main():
     # The following block of code enables memory growth for the GPU during runtime.
     # It is suspected that this helps avoiding out of memory errors.
     # https://www.tensorflow.org/guide/gpu
-    gpus = tf.config.list_physical_devices("GPU")
-    if gpus:
-        try:
-            # Currently, memory growth needs to be the same across GPUs
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            logical_gpus = tf.config.list_logical_devices("GPU")
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-        except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
-            print(e)
+    # gpus = tf.config.list_physical_devices("GPU")
+    # if gpus:
+    #    try:
+    #        # Currently, memory growth needs to be the same across GPUs
+    #        for gpu in gpus:
+    #            tf.config.experimental.set_memory_growth(gpu, True)
+    #        logical_gpus = tf.config.list_logical_devices("GPU")
+    #        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    #    except RuntimeError as e:
+    #        # Memory growth must be set before GPUs have been initialized
+    #        print(e)
 
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
@@ -305,6 +319,8 @@ def main():
         batch_size=args.batch_size,
         max_ram_consumption=args.max_ram_consumption,
         max_flash_consumption=args.max_flash_consumption,
+        data_dtype_multiplier=args.data_dtype_multiplier,
+        model_dtype_multiplier=args.model_dtype_multiplier,
         **args.dataset_options,
     )
     pareto_front = data_model_generator.run_data_nas(args.num_models)
@@ -315,7 +331,7 @@ def main():
         print(data_model.configuration.data_configuration)
         print(data_model.configuration.model_configuration)
         print(
-            f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Model Size (in bytes): {data_model.model_size}."
+            f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Ram Consumption (in bytes): {data_model.ram_consumption}, Flash Consumption (in bytes): {data_model.flash_consumption}."
         )
         print("-" * 200)
 
