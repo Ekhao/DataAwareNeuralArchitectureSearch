@@ -131,7 +131,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
     def _generate_new_unevaluated_configurations(self) -> None:
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
-        if not self.population:
+        if not self.population:  # Checks if the list is empty
             self.initialize_search_strategy(self.trivial_initialization)
             return
         # Use tournament selection to decide which population to breed
@@ -163,7 +163,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
 
         winners = []
         for tournament in tournaments:
-            best_tournament_fitness = 0
+            best_tournament_fitness = -99
             best_contestant = None
             for contestant in tournament:
                 if contestant[1] > best_tournament_fitness:
@@ -187,7 +187,9 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         # Generate a random number to choose which mutation to use:
         mutations = []
         for i in range(amount):
-            configuration_to_mutate = configurations_to_mutate[i % amount]
+            configuration_to_mutate = configurations_to_mutate[
+                i % min(len(configurations_to_mutate), amount)
+            ]
             mutation = copy.deepcopy(configuration_to_mutate)
 
             # Sometimes a mutation does nothing, so continue until a change is made.
