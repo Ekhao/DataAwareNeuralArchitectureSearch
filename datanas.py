@@ -4,9 +4,6 @@
 import argparse
 import json
 
-# Third Party Imports
-import tensorflow as tf
-
 # Local Imports
 import searchspace
 import datamodelgenerator
@@ -248,21 +245,6 @@ def main():
             key, value = option.split(":")
             temp_dataset_options[key] = value
         args.dataset_options = temp_dataset_options
-
-    # The following block of code enables memory growth for the GPU during runtime.
-    # It is suspected that this helps avoiding out of memory errors.
-    # https://www.tensorflow.org/guide/gpu
-    # gpus = tf.config.list_physical_devices("GPU")
-    # if gpus:
-    #    try:
-    #        # Currently, memory growth needs to be the same across GPUs
-    #        for gpu in gpus:
-    #            tf.config.experimental.set_memory_growth(gpu, True)
-    #        logical_gpus = tf.config.list_logical_devices("GPU")
-    #        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    #    except RuntimeError as e:
-    #        # Memory growth must be set before GPUs have been initialized
-    #        print(e)
 
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
