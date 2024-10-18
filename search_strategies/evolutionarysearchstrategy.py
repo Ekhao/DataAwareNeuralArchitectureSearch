@@ -249,10 +249,10 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
                             ] = mutated_value
                     # Case for adding a layer to the model
                     case x if 0.8 <= x < 0.9:
-                        mutation = self._new_convolutional_layer_mutation(mutation)  # type: ignore Again the type system gets confused
+                        mutation = self._new_layer_mutation(mutation)  # type: ignore Again the type system gets confused
                     # Case for removing a layer from the model
                     case x if 0.9 <= x < 1:
-                        mutation = self._remove_convolutional_layer_mutation(mutation)  # type: ignore Same as above
+                        mutation = self._remove_layer_mutation(mutation)  # type: ignore Same as above
 
             mutations.append(mutation)
 
@@ -302,11 +302,13 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         )
         new_layer = {
             key: random.choice(value)
-            for key, value in self.search_space.model_search_space[new_layer_type]
+            for key, value in self.search_space.model_search_space[
+                new_layer_type
+            ].items()
         }
         assert type(mutation.model_configuration) == list
-        if len(mutation[1]) < self.max_num_layers:
-            mutation[1].append(new_layer)
+        if len(mutation.model_configuration) < self.max_num_layers:
+            mutation.model_configuration.append(new_layer)
         return mutation
 
     # Remove the last convolutional layer of the model

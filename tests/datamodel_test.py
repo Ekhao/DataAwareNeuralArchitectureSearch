@@ -54,23 +54,36 @@ class DataModelTestCase(unittest.TestCase):
                 },
             ],
         )
-        data_model = datamodel.DataModel.from_data_configuration(
-            configuration=configuration,
+        data_instance = datamodel.DataModel.create_data(
+            data_configuration=configuration.data_configuration,
             dataset_loader=dataset_loader,
+            test_size=0.2,
+            max_ram_consumption=256000,
+            max_flash_consumption=1000000,
+            data_dtype_multiplier=1,
+            frame_size=2048,
+            hop_length=512,
+            num_mel_filters=80,
+            num_mfccs=13,
+        )
+        model = datamodel.DataModel.create_model(
+            model_configuration=configuration.model_configuration,
+            data_shape=data_instance.X_train[0].shape,
             num_target_classes=2,
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
             max_ram_consumption=256000,
             max_flash_consumption=1000000,
-            test_size=0.2,
             data_dtype_multiplier=1,
             model_dtype_multiplier=1,
-            seed=52,
-            frame_size=2048,
-            hop_length=512,
-            num_mel_filters=80,
-            num_mfccs=13,
+        )
+        data_model = datamodel.DataModel(
+            configuration=configuration,
+            data=data_instance,
+            model=model,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
         )
         self.assertTrue(isinstance(data_model.model, tf.keras.Model))
 
@@ -161,23 +174,37 @@ class DataModelTestCase(unittest.TestCase):
                 },
             ],
         )
-        data_model = datamodel.DataModel.from_data_configuration(
-            configuration=configuration,
+
+        data_instance = datamodel.DataModel.create_data(
+            data_configuration=configuration.data_configuration,
             dataset_loader=dataset_loader,
+            test_size=0.2,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
+            data_dtype_multiplier=1,
+            frame_size=2048,
+            hop_length=512,
+            num_mel_filters=80,
+            num_mfccs=13,
+        )
+        model = datamodel.DataModel.create_model(
+            model_configuration=configuration.model_configuration,
+            data_shape=data_instance.X_train[0].shape,
             num_target_classes=2,
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
-            test_size=0.2,
             data_dtype_multiplier=1,
             model_dtype_multiplier=1,
-            seed=20,
-            frame_size=2048,
-            hop_length=512,
-            num_mel_filters=80,
-            num_mfccs=13,
+        )
+        data_model = datamodel.DataModel(
+            configuration=configuration,
+            data=data_instance,
+            model=model,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
         )
 
         model_size_without_training = data_model._get_model_size(
@@ -187,19 +214,6 @@ class DataModelTestCase(unittest.TestCase):
         self.assertEqual(model_size_without_training, 81534)
 
     def test_evaluate_model_size2(self):
-        search_space = searchspace.SearchSpace(
-            data_search_space={
-                "sample_rate": [48000, 24000, 12000, 6000, 3000, 1500, 750, 325],
-                "audio_representation": ["spectrogram", "mel-spectrogram", "mfcc"],
-            },
-            model_search_space={
-                "conv_layer": {
-                    "filters": [2, 4, 8, 16, 32, 64, 128],
-                    "kernel_size": [3, 5],
-                    "activation": ["relu", "sigmoid"],
-                }
-            },
-        )
         dataset_loader = unittest.mock.MagicMock()
         dataset_loader.load_dataset = unittest.mock.Mock(return_value=(None))
         dataset_loader.supervised_dataset = unittest.mock.Mock(
@@ -224,24 +238,39 @@ class DataModelTestCase(unittest.TestCase):
                 },
             ],
         )
-        data_model = datamodel.DataModel.from_data_configuration(
-            configuration=configuration,
+
+        data_instance = datamodel.DataModel.create_data(
+            data_configuration=configuration.data_configuration,
             dataset_loader=dataset_loader,
+            test_size=0.7,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
+            data_dtype_multiplier=1,
+            frame_size=2048,
+            hop_length=512,
+            num_mel_filters=80,
+            num_mfccs=13,
+        )
+        model = datamodel.DataModel.create_model(
+            model_configuration=configuration.model_configuration,
+            data_shape=data_instance.X_train[0].shape,
             num_target_classes=2,
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
-            test_size=0.7,
             data_dtype_multiplier=1,
             model_dtype_multiplier=2,
-            seed=20,
-            frame_size=2048,
-            hop_length=512,
-            num_mel_filters=80,
-            num_mfccs=13,
         )
+        data_model = datamodel.DataModel(
+            configuration=configuration,
+            data=data_instance,
+            model=model,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
+        )
+
         model_size_without_training = data_model._get_model_size(
             data_model.model, model_dtype_multiplier=2
         )
@@ -273,24 +302,39 @@ class DataModelTestCase(unittest.TestCase):
                 },
             ],
         )
-        data_model = datamodel.DataModel.from_data_configuration(
-            configuration=configuration,
+
+        data_instance = datamodel.DataModel.create_data(
+            data_configuration=configuration.data_configuration,
             dataset_loader=dataset_loader,
+            test_size=0.7,
+            max_ram_consumption=1500000,
+            max_flash_consumption=1000000,
+            data_dtype_multiplier=2,
+            frame_size=2048,
+            hop_length=512,
+            num_mel_filters=80,
+            num_mfccs=13,
+        )
+        model = datamodel.DataModel.create_model(
+            model_configuration=configuration.model_configuration,
+            data_shape=data_instance.X_train[0].shape,
             num_target_classes=2,
             model_optimizer=tf.keras.optimizers.Adam(),
             model_loss_function=tf.keras.losses.SparseCategoricalCrossentropy(),
             model_width_dense_layer=10,
             max_ram_consumption=1500000,
             max_flash_consumption=1000000,
-            test_size=0.7,
             data_dtype_multiplier=2,
             model_dtype_multiplier=1,
-            seed=20,
-            frame_size=2048,
-            hop_length=512,
-            num_mel_filters=80,
-            num_mfccs=13,
         )
+        data_model = datamodel.DataModel(
+            configuration=configuration,
+            data=data_instance,
+            model=model,
+            data_dtype_multiplier=1,
+            model_dtype_multiplier=1,
+        )
+
         data_size = data_model._get_data_size(
             data_model.data.X_train, data_dtype_multiplier=2
         )
