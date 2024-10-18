@@ -1,8 +1,9 @@
 {
     "datanas_config": {
         "general_config": {
-            "num_models": 10,
-            "seed": null
+            "num_models": 100,
+            "seed": null,
+            "supernet": true
         },
         "joblib_config": {
             "num_cores_to_use": -1
@@ -67,7 +68,7 @@
             "optimizer": "adam",
             "loss": "categorical_crossentropy",
             "num_output_classes": 2,
-            "width_dense_layer": 10
+            "width_dense_layer": 20
         },
         "dataset_config": {
             "dataset_name": "ToyConveyor",
@@ -91,14 +92,14 @@
         },
         "search_strategy_config": {
             "search_strategy": "evolution",
-            "initialization": "trivial",
-            "max_num_layers": 5
+            "initialization": "random",
+            "max_num_layers": 10
         },
         "evaluation_config": {
-            "num_epochs": 20,
+            "num_epochs": 10,
             "batch_size": 32,
-            "max_ram_consumption": 256000,
-            "max_flash_consumption": 1000000,
+            "max_ram_consumption": 2560000,
+            "max_flash_consumption": 10000000,
             "data_dtype_multiplier": 1,
             "model_dtype_multiplier": 1
         },
