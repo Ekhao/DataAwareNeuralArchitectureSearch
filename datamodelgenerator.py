@@ -10,11 +10,10 @@ import numpy as np
 import tensorflow as tf
 
 # Local Imports
-import datamodel
 import datasetloader
+import supernet
 from searchstrategy import SearchStrategy
 from datamodel import DataModel
-from configuration import Configuration
 
 
 class DataModelGenerator:
@@ -33,6 +32,7 @@ class DataModelGenerator:
         max_flash_consumption: int,
         data_dtype_multiplier: int,
         model_dtype_multiplier: int,
+        supernet_flag: bool,
         **data_options,
     ) -> None:
         self.num_target_classes = num_target_classes
@@ -51,6 +51,7 @@ class DataModelGenerator:
         self.max_flash_consumption = max_flash_consumption
         self.data_dtype_multiplier = data_dtype_multiplier
         self.model_dtype_multiplier = model_dtype_multiplier
+        self.supernet_flag = supernet_flag
 
     def run_data_nas(self, num_of_models: int) -> list[DataModel]:
         pareto_optimal_models = []
@@ -74,6 +75,10 @@ class DataModelGenerator:
                 ]
             )
 
+        # Create a dictionary to store supernets (one for each data configuration)
+        if self.supernet_flag:
+            supernets = {}
+
         for model_number in range(num_of_models):
             # Print that we are now running a new sample
             print("-" * 100)
@@ -89,27 +94,64 @@ class DataModelGenerator:
 
             print("Creating data and model from configuration...")
             if configuration.data_configuration != previous_data_configuration:
-                # Create data and model from configuration
-                data_model = datamodel.DataModel.from_data_configuration(
-                    configuration=configuration,
+                data = DataModel.create_data(
+                    configuration.data_configuration,
                     dataset_loader=self.dataset_loader,
-                    num_target_classes=self.num_target_classes,
-                    model_optimizer=self.optimizer,
-                    model_loss_function=self.loss_function,
-                    model_width_dense_layer=self.width_dense_layer,
-                    max_ram_consumption=self.max_ram_consumption,
-                    max_flash_consumption=self.max_flash_consumption,
                     test_size=self.test_size,
-                    data_dtype_multiplier=self.data_dtype_multiplier,
-                    model_dtype_multiplier=self.model_dtype_multiplier,
-                    seed=self.seed,
+                    max_ram_consumption=self.max_ram_consumption,
                     **self.data_options,
                 )
             elif previous_data != None:
-                # Use previous data and create model from configuration
-                data_model = datamodel.DataModel.from_preloaded_data(
-                    configuration=configuration,
-                    data=previous_data,
+                data = previous_data
+            else:
+                raise RuntimeError(
+                    "Configuration was same as previous but no previous data was loaded."
+                )
+
+            if data == None:
+                print("Infeasible data generated. Skipping to next configuration...")
+                continue
+
+            if self.supernet_flag:
+                if frozenset(configuration.data_configuration) in supernets:
+                    supernet_instance = supernets[
+                        frozenset(configuration.data_configuration)
+                    ]
+                else:
+                    if isinstance(data.X_train, np.ndarray):
+                        raise NotImplementedError(
+                            "Supernet functionality not yet implemented for data as numpy arrays"
+                        )
+                    elif isinstance(data.X_train, tf.data.Dataset):
+                        supernet_instance = supernet.SuperNet(
+                            data=data,
+                            num_target_classes=self.num_target_classes,
+                            model_optimizer=self.optimizer,
+                            model_loss_function=self.loss_function,
+                        )
+                        supernets[frozenset(configuration.data_configuration)] = (
+                            supernet_instance
+                        )
+                    else:
+                        raise TypeError(
+                            "Generated data was neither a np.ndarray or tf.data.Dataset"
+                        )
+                model = supernet_instance.sample_subnet(
+                    **configuration.model_configuration
+                )
+            else:
+                if isinstance(data.X_train, np.ndarray):
+                    data_shape = data.X_train[0].shape
+                elif isinstance(data.X_train, tf.data.Dataset):
+                    data_shape = data.X_train.element_spec[0].shape[1:]
+                else:
+                    raise TypeError(
+                        "Generated data was neither a np.ndarray or tf.data.Dataset"
+                    )
+
+                model = DataModel.create_model(
+                    model_configuration=configuration.model_configuration,
+                    data_shape=data_shape,
                     num_target_classes=self.num_target_classes,
                     model_optimizer=self.optimizer,
                     model_loss_function=self.loss_function,
@@ -118,21 +160,19 @@ class DataModelGenerator:
                     max_flash_consumption=self.max_flash_consumption,
                     data_dtype_multiplier=self.data_dtype_multiplier,
                     model_dtype_multiplier=self.model_dtype_multiplier,
-                    seed=self.seed,
-                )
-            else:
-                raise RuntimeError(
-                    "Configuration was same as previous but no previous data was loaded. This should not happen."
                 )
 
-            # Some data and model configurations are infeasible. In this case the model or data created in the data model will be None.
-            # If we create an infeasible datamodel we simply skip to proposing the next model
-            if data_model.model == None:
+            if model == None:
                 print("Infeasible model generated. Skipping to next configuration...")
                 continue
-            if data_model.data == None:
-                print("Infeasible data generated. Skipping to next configuration...")
-                continue
+
+            data_model = DataModel(
+                configuration=configuration,
+                data=data,
+                model=model,
+                data_dtype_multiplier=self.data_dtype_multiplier,
+                model_dtype_multiplier=self.model_dtype_multiplier,
+            )
 
             print("Evaluating performance of data and model")
             # Evaluate performance of data and model

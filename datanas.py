@@ -32,6 +32,12 @@ def main():
         help="A seed to be given to the random number generators of the program.",
         type=int,
     )
+    argparser.add_argument(
+        "-snet",
+        "--supernet",
+        action="store_true",
+        help="A flag to set wheter the neural architecture search should use supernets and weight sharing. This should generally speed up the neural architecture search.",
+    )
 
     # Joblib Parameters
     argparser.add_argument(
@@ -189,6 +195,8 @@ def main():
         args.num_models = general_config["num_models"]
     if not args.seed:
         args.seed = general_config["seed"]
+    if not args.supernet:
+        args.supernet = general_config["supernet"]
     if not args.num_cores_to_use:
         args.num_cores_to_use = joblib_config["num_cores_to_use"]
     if not args.optimizer:
@@ -239,6 +247,7 @@ def main():
     args.model_search_space = search_space_config["model_search_space"]
 
     # If the the dataset options have been passed as command line arguments, parse them into a dictionary
+    # TODO: This may not work anymore 15/10/2024
     if isinstance(args.dataset_options, str):
         temp_dataset_options = {}
         for option in args.dataset_options:
@@ -303,6 +312,7 @@ def main():
         max_flash_consumption=args.max_flash_consumption,
         data_dtype_multiplier=args.data_dtype_multiplier,
         model_dtype_multiplier=args.model_dtype_multiplier,
+        supernet_flag=args.supernet,
         **args.dataset_options,
     )
     pareto_front = data_model_generator.run_data_nas(args.num_models)

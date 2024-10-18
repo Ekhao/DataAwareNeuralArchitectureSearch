@@ -2,7 +2,6 @@
 
 # Standard Library Imports
 from __future__ import annotations
-import sys
 from typing import Any, Optional
 
 # Third Party Imports
@@ -13,6 +12,8 @@ import numpy as np
 import datasetloader
 from data import Data
 from configuration import Configuration
+
+WAKE_VISION_STEPS_PER_EPOCH = 10
 
 
 class DataModel:
@@ -32,129 +33,6 @@ class DataModel:
         self.seed = seed
         self.data_dtype_multiplier = data_dtype_multiplier
         self.model_dtype_multiplier = model_dtype_multiplier
-
-    # A constructor to use when both data and model need to be created.
-    @classmethod
-    def from_data_configuration(
-        cls,
-        configuration: Configuration,
-        dataset_loader: datasetloader.DatasetLoader,
-        num_target_classes: int,
-        model_optimizer: tf.keras.optimizers.Optimizer,
-        model_loss_function: tf.keras.losses.Loss,
-        model_width_dense_layer: int,
-        max_ram_consumption: int,
-        max_flash_consumption: int,
-        test_size: float,
-        data_dtype_multiplier: int,
-        model_dtype_multiplier: int,
-        seed: Optional[int] = None,
-        **data_options,
-    ) -> DataModel:
-        data = cls.create_data(
-            configuration.data_configuration,
-            dataset_loader,
-            test_size,
-            max_ram_consumption,
-            data_dtype_multiplier,
-            **data_options,
-        )
-
-        if data != None:
-            if isinstance(data.X_train, np.ndarray):
-                model = cls.create_model(
-                    configuration.model_configuration,
-                    data.X_train[0].shape,
-                    num_target_classes,
-                    model_optimizer,
-                    model_loss_function,
-                    model_width_dense_layer,
-                    max_ram_consumption,
-                    max_flash_consumption,
-                    data_dtype_multiplier,
-                    model_dtype_multiplier,
-                )
-            elif isinstance(data.X_train, tf.data.Dataset):
-                model = cls.create_model(
-                    configuration.model_configuration,
-                    data.X_train.element_spec[0].shape[1:],
-                    num_target_classes,
-                    model_optimizer,
-                    model_loss_function,
-                    model_width_dense_layer,
-                    max_ram_consumption,
-                    max_flash_consumption,
-                    data_dtype_multiplier,
-                    model_dtype_multiplier,
-                )
-            else:
-                raise TypeError(
-                    "Generated data was neither a np.ndarray or a tf.data.Dataset."
-                )
-        else:
-            model = None
-
-        return cls(
-            configuration,
-            data,
-            model,
-            data_dtype_multiplier,
-            model_dtype_multiplier,
-            seed,
-        )
-
-    # An alternative constructor to use when data is already loaded and only model needs to be created.
-    @classmethod
-    def from_preloaded_data(
-        cls,
-        configuration: Configuration,
-        data: Data,
-        num_target_classes: int,
-        model_optimizer: tf.keras.optimizers.Optimizer,
-        model_loss_function: tf.keras.losses.Loss,
-        model_width_dense_layer: int,
-        max_ram_consumption: int,
-        max_flash_consumption: int,
-        data_dtype_multiplier: int,
-        model_dtype_multiplier: int,
-        seed: Optional[int] = None,
-    ) -> DataModel:
-
-        if isinstance(data.X_train, np.ndarray):
-            model = cls.create_model(
-                configuration.model_configuration,
-                data.X_train[0].shape,
-                num_target_classes,
-                model_optimizer,
-                model_loss_function,
-                model_width_dense_layer,
-                max_ram_consumption,
-                max_flash_consumption,
-                data_dtype_multiplier,
-                model_dtype_multiplier,
-            )
-        if isinstance(data.X_train, tf.data.Dataset):
-            model = cls.create_model(
-                configuration.model_configuration,
-                data.X_train.element_spec[0].shape,
-                num_target_classes,
-                model_optimizer,
-                model_loss_function,
-                model_width_dense_layer,
-                max_ram_consumption,
-                max_flash_consumption,
-                data_dtype_multiplier,
-                model_dtype_multiplier,
-            )
-
-        return cls(
-            configuration,
-            data,
-            model,
-            data_dtype_multiplier,
-            model_dtype_multiplier,
-            seed,
-        )
 
     @staticmethod
     def create_data(
@@ -339,19 +217,21 @@ class DataModel:
                 epochs=num_epochs,
                 batch_size=batch_size,
                 class_weight=class_weight,
+                verbose=2,
             )
             self.model.evaluate(
-                self.data.X_test, y_test, batch_size=batch_size, verbose=1
+                self.data.X_test, y_test, batch_size=batch_size, verbose=2
             )
 
         elif isinstance(self.data.X_train, tf.data.Dataset):
             self.model.fit(
                 self.data.X_train,
                 epochs=num_epochs,
-                steps_per_epoch=100,
+                steps_per_epoch=WAKE_VISION_STEPS_PER_EPOCH,
                 validation_data=self.data.X_val,
+                verbose=2,
             )
-            self.model.evaluate(self.data.X_test, verbose=1)
+            self.model.evaluate(self.data.X_test, verbose=2)
 
         # We would like to get accuracy, precision, recall and model size.
         results = self.model.get_metrics_result()
