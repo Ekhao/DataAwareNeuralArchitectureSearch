@@ -174,10 +174,17 @@ class DataModel:
     def _get_max_internal_representation_size(model, data_dtype_multiplier: int):
         max_tensor_memory = 0
 
-        for layer in model.layers:
-            input_shape = layer.input.shape
+        for i, layer in enumerate(model.layers):
+
+            if isinstance(layer.input, list):
+                input_size = 0
+                for inputs in layer.input:
+                    input_size += np.prod(inputs.shape[1:])  # Exclude the batch size
+            else:
+                input_shape = layer.input.shape
+                input_size = np.prod(input_shape[1:])
+
             output_shape = layer.output.shape
-            input_size = np.prod(input_shape[1:])  # Exclude the batch size
             output_size = np.prod(output_shape[1:])
             input_memory = input_size * data_dtype_multiplier
             output_memory = output_size * data_dtype_multiplier
