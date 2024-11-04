@@ -24,7 +24,6 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
         self,
         search_space: SearchSpace,
         population_size: int,
-        max_num_layers: int,
         population_update_ratio: float,
         crossover_ratio: float,
         max_ram_consumption: int,
@@ -98,7 +97,7 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
     def _generate_new_unevaluated_configurations(self) -> None:
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
         if not self.population:  # Checks if the list is empty
-            self.initialize_search_strategy(self.trivial_initialization)
+            self.initialize_search_strategy()
             return
         # Use tournament selection to decide which population to breed
         breeders = self._tournament_selection()

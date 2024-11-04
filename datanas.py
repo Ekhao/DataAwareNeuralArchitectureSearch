@@ -11,6 +11,7 @@ import dataset_loaders.toyconveyordatasetloader
 import dataset_loaders.wakevisiondatasetloader
 import search_strategies.randomsearchstrategy as randomsearchstrategy
 import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
+import search_strategies.supernetevolutionary as supernetevolutionary
 
 
 def main():
@@ -106,8 +107,8 @@ def main():
     argparser.add_argument(
         "-ss",
         "--search_strategy",
-        help='The search strategy to use to direct the search. Supported options are "evolution" and "random".',
-        choices=["evolution", "random"],
+        help='The search strategy to use to direct the search. Supported options are "evolution", "random" and "supernet_evo". "supernet_evo" is only supported for supernet searches, while the other strategies are supported for traditional searches.',
+        choices=["evolution", "random", "supernet_evo"],
     )
     argparser.add_argument(
         "-i",
@@ -293,6 +294,16 @@ def main():
     elif args.search_strategy == "random":
         search_strategy = randomsearchstrategy.RandomSearchStrategy(
             search_space, args.max_num_layers, args.seed
+        )
+    elif args.search_strategy == "supernet_evo":
+        search_strategy = supernetevolutionary.SuperNetEvolutionary(
+            search_space=search_space,
+            population_size=args.population_size,
+            population_update_ratio=args.population_size,
+            crossover_ratio=args.crossover_ratio,
+            max_ram_consumption=args.max_ram_consumption,
+            max_flash_consumption=args.max_flash_consumption,
+            seed=args.seed,
         )
     else:
         raise ValueError(f'No "{args.search_strategy}" defined".')

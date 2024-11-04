@@ -99,6 +99,7 @@ class DataModelGenerator:
                     dataset_loader=self.dataset_loader,
                     test_size=self.test_size,
                     max_ram_consumption=self.max_ram_consumption,
+                    data_dtype_multiplier=self.data_dtype_multiplier,
                     **self.data_options,
                 )
             elif previous_data != None:

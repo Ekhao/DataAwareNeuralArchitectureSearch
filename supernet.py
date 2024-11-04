@@ -1,7 +1,7 @@
 import tensorflow as tf
 import dataset_loaders.wakevisiondatasetloader
 
-SUPERNET_NUM_EPOCHS = 10
+SUPERNET_NUM_EPOCHS = 4
 SUPERNET_STEPS_PER_EPOCH = 10000
 
 
@@ -23,7 +23,7 @@ class SuperNet:
 
         supernet = tf.keras.applications.MobileNetV2(
             input_shape=input_shape,
-            weights="imagenet",
+            weights=None,
             include_top=False,
         )
 
