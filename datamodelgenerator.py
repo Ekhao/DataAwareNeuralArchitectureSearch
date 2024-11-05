@@ -114,9 +114,11 @@ class DataModelGenerator:
                 continue
 
             if self.supernet_flag:
-                if frozenset(configuration.data_configuration) in supernets:
+                if (
+                    tuple(configuration.data_configuration.items()) in supernets
+                ):  # This seems to not work and each input is considered the same - check out
                     supernet_instance = supernets[
-                        frozenset(configuration.data_configuration)
+                        tuple(configuration.data_configuration.items())
                     ]
                 else:
                     if isinstance(data.X_train, np.ndarray):
@@ -130,7 +132,7 @@ class DataModelGenerator:
                             model_optimizer=self.optimizer,
                             model_loss_function=self.loss_function,
                         )
-                        supernets[frozenset(configuration.data_configuration)] = (
+                        supernets[tuple(configuration.data_configuration.items())] = (
                             supernet_instance
                         )
                     else:
