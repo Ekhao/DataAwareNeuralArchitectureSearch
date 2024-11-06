@@ -1,8 +1,9 @@
 import tensorflow as tf
 import dataset_loaders.wakevisiondatasetloader
 
-SUPERNET_NUM_EPOCHS = 4
-SUPERNET_STEPS_PER_EPOCH = 10000
+SUPERNET_NUM_EPOCHS_PRETRAIN = 30
+SUPERNET_NUM_EPOCHS_FINETUNE = 20
+SUPERNET_STEPS_PER_EPOCH = 1000
 
 
 class SuperNet:
@@ -40,7 +41,7 @@ class SuperNet:
 
         supernet_w_head.fit(
             data.X_train,
-            epochs=SUPERNET_NUM_EPOCHS,
+            epochs=SUPERNET_NUM_EPOCHS_PRETRAIN,
             steps_per_epoch=SUPERNET_STEPS_PER_EPOCH,
             validation_data=data.X_val,
             verbose=2,
@@ -123,7 +124,7 @@ class SuperNet:
 
         subnetwork.fit(
             self.data.X_train,
-            epochs=SUPERNET_NUM_EPOCHS,
+            epochs=SUPERNET_NUM_EPOCHS_FINETUNE,
             steps_per_epoch=SUPERNET_STEPS_PER_EPOCH,
             validation_data=self.data.X_val,
             verbose=2,
