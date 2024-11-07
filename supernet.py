@@ -2,7 +2,6 @@ import tensorflow as tf
 import dataset_loaders.wakevisiondatasetloader
 
 SUPERNET_NUM_EPOCHS_PRETRAIN = 30
-SUPERNET_NUM_EPOCHS_FINETUNE = 20
 SUPERNET_STEPS_PER_EPOCH = 1000
 
 
@@ -120,14 +119,6 @@ class SuperNet:
             loss=self.model_loss_function,
             optimizer=self.model_optimizer,
             metrics=["Accuracy", "Precision", "Recall"],
-        )
-
-        subnetwork.fit(
-            self.data.X_train,
-            epochs=SUPERNET_NUM_EPOCHS_FINETUNE,
-            steps_per_epoch=SUPERNET_STEPS_PER_EPOCH,
-            validation_data=self.data.X_val,
-            verbose=2,
         )
 
         return subnetwork
