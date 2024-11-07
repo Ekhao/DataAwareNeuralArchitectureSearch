@@ -67,7 +67,7 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
         if not self.unevaluated_configurations:
             self._generate_new_unevaluated_configurations()
 
-        return self.unevaluated_configurations.pop(0)
+        return self.unevaluated_configurations.pop()
 
     # Updates the data_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
@@ -124,6 +124,9 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
         self.unevaluated_configurations = new_mutations + new_crossovers
 
     def _tournament_selection(self) -> list[Individual]:
+        # Shuffle population to generate random tournaments
+        random.shuffle(self.population)
+
         tournaments = np.array_split(self.population, self.tournament_amount)
 
         winners = []
