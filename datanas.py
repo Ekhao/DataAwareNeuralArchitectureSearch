@@ -299,7 +299,7 @@ def main():
         search_strategy = supernetevolutionary.SuperNetEvolutionary(
             search_space=search_space,
             population_size=args.population_size,
-            population_update_ratio=args.population_size,
+            population_update_ratio=args.population_update_ratio,
             crossover_ratio=args.crossover_ratio,
             max_ram_consumption=args.max_ram_consumption,
             max_flash_consumption=args.max_flash_consumption,
