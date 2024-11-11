@@ -18,13 +18,12 @@ from configuration import Configuration
 Individual = tuple[DataModel, float]
 
 
-class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
+class SuperNetEvolutionary(searchstrategy.SearchStrategy):
     # Generates an initial population. The "trivial" parameter is a boolean that decides whether the initial population is generated out of random one layer models (True) or general random models (False)
     def __init__(
         self,
         search_space: SearchSpace,
         population_size: int,
-        max_num_layers: int,
         population_update_ratio: float,
         crossover_ratio: float,
         max_ram_consumption: int,
@@ -37,7 +36,6 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         self.unevaluated_configurations = []
         self.population = []
         self.population_size = population_size
-        self.max_num_layers = max_num_layers
         self.crossover_ratio = crossover_ratio
         self.max_ram_consumption = max_ram_consumption
         self.max_flash_consumption = max_flash_consumption
@@ -45,39 +43,23 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
             1, round(population_size * population_update_ratio)
         )
 
-    def initialize_search_strategy(self, trivial_initialization: bool = True) -> None:
-        # A paper (Kenneth O Stanley, Jeff Clune, Joel Lehman, and Risto Miikkulainen. 2019. Designing neural networks through neuroevolution. Nature Machine Intelligence 1, 1 (2019), 24–35.) claims that it is good to start from an initial trivial solution. Therefore the initial population created here only contains models with only one layer.
-        self.trivial_initialization = trivial_initialization
-        if trivial_initialization:
-            self.unevaluated_configurations = [
-                Configuration(
-                    data_configuration={
-                        key: random.choice(value)
-                        for key, value in self.search_space.data_search_space.items()
-                    },
-                    # Generate a model configuration by randomly selecting a choice the first (and only) layer.
-                    model_configuration=[
-                        self._pick_random_model_layer() for _ in range(1)
-                    ],
-                )
-                for i in range(self.population_size)
-            ]
-        # Another common way to generate an intial configuration for evolutionary algorithms is to generate random models from the search space.
-        else:
-            self.unevaluated_configurations = [
-                Configuration(
-                    data_configuration={
-                        key: random.choice(value)
-                        for key, value in self.search_space.data_search_space.items()
-                    },
-                    # Generate a model configuration by randomly selecting a choice for all layers
-                    model_configuration=[
-                        self._pick_random_model_layer()
-                        for _ in range(random.randint(1, self.max_num_layers))
-                    ],
-                )
-                for i in range(self.population_size)
-            ]
+    def initialize_search_strategy(self) -> None:
+        self.unevaluated_configurations = [
+            Configuration(
+                data_configuration={
+                    key: random.choice(value)
+                    for key, value in self.search_space.data_search_space.items()
+                },
+                model_configuration={
+                    "stage3depth": random.randint(0, 3),
+                    "stage4depth": random.randint(0, 4),
+                    "stage5depth": random.randint(0, 3),
+                    "stage6depth": random.randint(0, 3),
+                    "stage7depth": random.randint(0, 1),
+                },
+            )
+            for i in range(self.population_size)
+        ]
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self) -> Configuration:
@@ -85,7 +67,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         if not self.unevaluated_configurations:
             self._generate_new_unevaluated_configurations()
 
-        return self.unevaluated_configurations.pop(0)
+        return self.unevaluated_configurations.pop()
 
     # Updates the data_model with its measured performance.
     # Generates a new population if all of the current population has been evaluated.
@@ -96,22 +78,6 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
             data_model, self.max_ram_consumption, self.max_flash_consumption
         )
         self.population.append((data_model, fitness))
-
-    def _pick_random_model_layer(self) -> dict:
-        # Pick a random type of layer:
-        layer_type = random.choice(list(self.search_space.model_search_space.keys()))
-
-        # Create a dictionary to be added to the model configuration list
-        layer = {}
-
-        # Add the type of the layer to this dictionary
-        layer["type"] = layer_type
-
-        # Populate the rest of the layer dictionary with random choices from the possible choices for this layer
-        for key, value in self.search_space.model_search_space[layer_type].items():
-            layer[key] = random.choice(value)
-
-        return layer
 
     @staticmethod
     def _evaluate_fitness(
@@ -131,7 +97,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     def _generate_new_unevaluated_configurations(self) -> None:
         # If there is no current population to generate new unevaluated configurations from we need to generate a new initial unevaluated configuration
         if not self.population:  # Checks if the list is empty
-            self.initialize_search_strategy(self.trivial_initialization)
+            self.initialize_search_strategy()
             return
         # Use tournament selection to decide which population to breed
         breeders = self._tournament_selection()
@@ -158,6 +124,9 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
         self.unevaluated_configurations = new_mutations + new_crossovers
 
     def _tournament_selection(self) -> list[Individual]:
+        # Shuffle population to generate random tournaments
+        random.shuffle(self.population)
+
         tournaments = np.array_split(self.population, self.tournament_amount)
 
         winners = []
@@ -197,7 +166,7 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
                 random_mutation_number = random.random()
                 match random_mutation_number:
                     # Case for changing the data granularity
-                    case x if 0 <= x < 0.4:
+                    case x if 0 <= x < 0.5:
                         key_to_mutate = random.choice(
                             list(configuration_to_mutate.data_configuration.keys())
                         )
@@ -212,47 +181,26 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
                         mutation.data_configuration[key_to_mutate] = mutated_value
 
                     # Case for changing a configuration of a model layer
-                    case x if 0.4 <= x < 0.8:
-                        number_of_layer_to_mutate = random.randint(
-                            0, len(configuration_to_mutate.model_configuration) - 1
-                        )
+                    case x if 0.5 <= x < 1:
+                        number_of_block_to_mutate = random.randint(3, 7)
 
-                        key_to_mutate = random.choice(
-                            list(
-                                configuration_to_mutate.model_configuration[
-                                    number_of_layer_to_mutate
-                                ].keys()
-                            )
-                        )
-
-                        if key_to_mutate == "type":
-                            # TODO: We currently do not support mutating the type of a layer to anothe
-                            continue
+                        if number_of_block_to_mutate == 4:
+                            possible_values = list(range(5))
+                        elif number_of_block_to_mutate == 7:
+                            possible_values = list(range(2))
                         else:
-                            current_layer_type = (
-                                configuration_to_mutate.model_configuration[
-                                    number_of_layer_to_mutate
-                                ]["type"]
-                            )
+                            possible_values = list(range(4))
 
-                            mutated_value = self._mutate_value(
-                                configuration_to_mutate.model_configuration[
-                                    number_of_layer_to_mutate
-                                ][key_to_mutate],
-                                possible_values=self.search_space.model_search_space[
-                                    current_layer_type
-                                ][key_to_mutate],
-                            )
+                        mutated_value = self._mutate_value(
+                            configuration_to_mutate.model_configuration[
+                                f"stage{number_of_block_to_mutate}depth"
+                            ],
+                            possible_values=possible_values,
+                        )
 
-                            mutation.model_configuration[number_of_layer_to_mutate][
-                                key_to_mutate
-                            ] = mutated_value
-                    # Case for adding a layer to the model
-                    case x if 0.8 <= x < 0.9:
-                        mutation = self._new_layer_mutation(mutation)  # type: ignore Again the type system gets confused
-                    # Case for removing a layer from the model
-                    case x if 0.9 <= x < 1:
-                        mutation = self._remove_layer_mutation(mutation)  # type: ignore Same as above
+                        mutation.model_configuration[
+                            f"stage{number_of_block_to_mutate}depth"
+                        ] = mutated_value
 
             mutations.append(mutation)
 
@@ -295,30 +243,6 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     def _mutate_unorderable_value(self, possible_values: list[Any]) -> Any:
         return random.choice(possible_values)
 
-    def _new_layer_mutation(self, configuration: Configuration) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        new_layer_type = random.choice(
-            list(self.search_space.model_search_space.keys())
-        )
-        new_layer = {
-            key: random.choice(value)
-            for key, value in self.search_space.model_search_space[
-                new_layer_type
-            ].items()
-        }
-        assert type(mutation.model_configuration) == list
-        if len(mutation.model_configuration) < self.max_num_layers:
-            mutation.model_configuration.append(new_layer)
-        return mutation
-
-    # Remove the last convolutional layer of the model
-    def _remove_layer_mutation(self, configuration: Configuration) -> Configuration:
-        mutation = copy.deepcopy(configuration)
-        assert type(mutation[1]) == list
-        if len(mutation[1]) > 1:
-            mutation[1].pop()
-        return mutation
-
     def _create_crossovers(
         self, configurations_to_crossover: list[Configuration], amount: int
     ) -> list[Configuration]:
@@ -342,34 +266,13 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
             for key in list(configuration1.data_configuration.keys())
         }
 
-        num_layers_model1 = len(configuration1.model_configuration)
-        num_layers_model2 = len(configuration2.model_configuration)
-
-        if num_layers_model1 == num_layers_model2:
-            num_layers_new_model = num_layers_model1
-            min_layers = num_layers_model1
-        else:
-            min_layers = min(num_layers_model1, num_layers_model2)
-            max_layers = max(num_layers_model1, num_layers_model2)
-
-            num_layers_new_model = random.randint(min_layers, max_layers)
-
-        new_model = []
-        for i in range(min_layers):
-            new_layer = random.choice(
+        new_model = {}
+        for i in range(3, 8):
+            new_model[f"stage{i}depth"] = random.choice(
                 [
-                    configuration1.model_configuration[i],
-                    configuration2.model_configuration[i],
+                    configuration1.model_configuration[f"stage{i}depth"],
+                    configuration2.model_configuration[f"stage{i}depth"],
                 ]
             )
-
-            new_model.append(new_layer)
-
-        if num_layers_model1 > num_layers_model2:
-            for i in range(min_layers, num_layers_new_model):
-                new_model.append(copy.deepcopy(configuration1.model_configuration[i]))
-        elif num_layers_model2 > num_layers_model1:
-            for i in range(min_layers, num_layers_new_model):
-                new_model.append(copy.deepcopy(configuration2.model_configuration[i]))
 
         return Configuration(data_configuration=new_data, model_configuration=new_model)

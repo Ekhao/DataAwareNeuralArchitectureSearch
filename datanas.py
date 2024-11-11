@@ -4,9 +4,6 @@
 import argparse
 import json
 
-# Third Party Imports
-import tensorflow as tf
-
 # Local Imports
 import searchspace
 import datamodelgenerator
@@ -14,6 +11,7 @@ import dataset_loaders.toyconveyordatasetloader
 import dataset_loaders.wakevisiondatasetloader
 import search_strategies.randomsearchstrategy as randomsearchstrategy
 import search_strategies.evolutionarysearchstrategy as evolutionarysearchstrategy
+import search_strategies.supernetevolutionary as supernetevolutionary
 
 
 def main():
@@ -24,16 +22,16 @@ def main():
 
     # General Parameters
     argparser.add_argument(
-        "-n",
-        "--num_models",
-        help="The number of models to evaluate before returning the pareto front.",
-        type=int,
-    )
-    argparser.add_argument(
         "-s",
         "--seed",
         help="A seed to be given to the random number generators of the program.",
         type=int,
+    )
+    argparser.add_argument(
+        "-snet",
+        "--supernet",
+        action="store_true",
+        help="A flag to set wheter the neural architecture search should use supernets and weight sharing. This should generally speed up the neural architecture search.",
     )
 
     # Joblib Parameters
@@ -71,40 +69,15 @@ def main():
     argparser.add_argument(
         "-dn",
         "--dataset_name",
-        help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined.",
-    )
-    argparser.add_argument(
-        "-f",
-        "--file_path",
-        help="The path to the directory containing the selected dataset.",
-    )
-    argparser.add_argument(
-        "-nf",
-        "--num_files",
-        nargs="*",
-        help="The number files to use for training. For some datasets this may require multiple values for different type of files.",
-        type=int,
-    )
-    argparser.add_argument(
-        "-ts",
-        "--test_size",
-        help="The percentage of the data to be used for the test set during training. Given on a scale from 0 to 1.",
-        type=float,
-    )
-    argparser.add_argument(
-        "-do",
-        "--dataset_options",
-        nargs="*",
-        help="Additional options for the dataset loader. Format should be option:value.",
-        type=str,
+        help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined. If the dataset needs additional options then specify these in the config file.",
     )
 
     # Search Strategy Parameters
     argparser.add_argument(
         "-ss",
         "--search_strategy",
-        help='The search strategy to use to direct the search. Supported options are "evolution" and "random".',
-        choices=["evolution", "random"],
+        help='The search strategy to use to direct the search. Supported options are "evolution", "random" and "supernet_evo". "supernet_evo" is only supported for supernet searches, while the other strategies are supported for traditional searches.',
+        choices=["evolution", "random", "supernet_evo"],
     )
     argparser.add_argument(
         "-i",
@@ -188,10 +161,10 @@ def main():
     evolutionary_config = config["evolutionary_config"]
 
     # Set options according to command line arguments and config file
-    if not args.num_models:
-        args.num_models = general_config["num_models"]
     if not args.seed:
         args.seed = general_config["seed"]
+    if not args.supernet:
+        args.supernet = general_config["supernet"]
     if not args.num_cores_to_use:
         args.num_cores_to_use = joblib_config["num_cores_to_use"]
     if not args.optimizer:
@@ -204,14 +177,7 @@ def main():
         args.width_dense_layer = model_config["width_dense_layer"]
     if not args.dataset_name:
         args.dataset_name = dataset_config["dataset_name"]
-    if not args.file_path:
-        args.file_path = dataset_config["file_path"]
-    if not args.num_files:
-        args.num_files = dataset_config["num_files"]
-    if not args.test_size:
-        args.test_size = dataset_config["test_size"]
-    if not args.dataset_options:
-        args.dataset_options = dataset_config["dataset_options"]
+    args.dataset_options = dataset_config["dataset_options"]
     if not args.search_strategy:
         args.search_strategy = search_strategy_config["search_strategy"]
     if not args.initialization:
@@ -241,29 +207,6 @@ def main():
     args.data_search_space = search_space_config["data_search_space"]
     args.model_search_space = search_space_config["model_search_space"]
 
-    # If the the dataset options have been passed as command line arguments, parse them into a dictionary
-    if isinstance(args.dataset_options, str):
-        temp_dataset_options = {}
-        for option in args.dataset_options:
-            key, value = option.split(":")
-            temp_dataset_options[key] = value
-        args.dataset_options = temp_dataset_options
-
-    # The following block of code enables memory growth for the GPU during runtime.
-    # It is suspected that this helps avoiding out of memory errors.
-    # https://www.tensorflow.org/guide/gpu
-    # gpus = tf.config.list_physical_devices("GPU")
-    # if gpus:
-    #    try:
-    #        # Currently, memory growth needs to be the same across GPUs
-    #        for gpu in gpus:
-    #            tf.config.experimental.set_memory_growth(gpu, True)
-    #        logical_gpus = tf.config.list_logical_devices("GPU")
-    #        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    #    except RuntimeError as e:
-    #        # Memory growth must be set before GPUs have been initialized
-    #        print(e)
-
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
         args.data_search_space, args.model_search_space
@@ -273,10 +216,8 @@ def main():
     if args.dataset_name == "ToyConveyor":
         dataset_loader = (
             dataset_loaders.toyconveyordatasetloader.ToyConveyorDatasetLoader(
-                args.file_path,
-                args.num_files,
-                args.dataset_options,
                 args.num_cores_to_use,
+                args.dataset_options,
             )
         )
     elif args.dataset_name == "wake_vision":
@@ -303,6 +244,16 @@ def main():
         search_strategy = randomsearchstrategy.RandomSearchStrategy(
             search_space, args.max_num_layers, args.seed
         )
+    elif args.search_strategy == "supernet_evo":
+        search_strategy = supernetevolutionary.SuperNetEvolutionary(
+            search_space=search_space,
+            population_size=args.population_size,
+            population_update_ratio=args.population_update_ratio,
+            crossover_ratio=args.crossover_ratio,
+            max_ram_consumption=args.max_ram_consumption,
+            max_flash_consumption=args.max_flash_consumption,
+            seed=args.seed,
+        )
     else:
         raise ValueError(f'No "{args.search_strategy}" defined".')
 
@@ -312,7 +263,6 @@ def main():
         loss_function=args.loss,
         search_strategy=search_strategy,
         dataset_loader=dataset_loader,
-        test_size=args.test_size,
         optimizer=args.optimizer,
         width_dense_layer=args.width_dense_layer,
         num_epochs=args.num_epochs,
@@ -321,9 +271,10 @@ def main():
         max_flash_consumption=args.max_flash_consumption,
         data_dtype_multiplier=args.data_dtype_multiplier,
         model_dtype_multiplier=args.model_dtype_multiplier,
+        supernet_flag=args.supernet,
         **args.dataset_options,
     )
-    pareto_front = data_model_generator.run_data_nas(args.num_models)
+    pareto_front = data_model_generator.run_data_nas()
 
     # Print out results
     print("Models on pareto front: ")

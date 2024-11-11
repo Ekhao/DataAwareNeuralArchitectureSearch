@@ -2,11 +2,11 @@
 # Preprocessing code is adapted from the original wake vision preprocessing code found at https://github.com/harvard-edge/Wake_Vision.
 
 # Standard Library Imports
-from typing import Tuple, Any
+from typing import Any
 
 # Third Party Imports
-import datasets
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 # Local Imports
 import datasetloader
@@ -19,25 +19,13 @@ class WakeVisionDatasetLoader(datasetloader.DatasetLoader):
     def __init__(
         self,
     ) -> None:
-        self.hf_dataset = datasets.load_dataset(
-            path="Harvard-Edge/Wake-Vision",
-            cache_dir="/work3/emjn/huggingface/datasets",  # TODO: Make this a configurable option
-        )
-        self.hf_dataset["original_train_quality"] = self.hf_dataset["train_quality"]
-        self.hf_dataset["original_validation"] = self.hf_dataset["validation"]
-        self.hf_dataset["original_test"] = self.hf_dataset["test"]
+        self.ds = tfds.load("wake_vision", data_dir="/work3/emjn/tensorflow_datasets")
 
     def configure_dataset(self, **kwargs: Any) -> Any:
         dataset = {}
-        dataset["train_quality"] = self.hf_dataset[
-            "original_train_quality"
-        ].to_tf_dataset(columns=["image", "person"], shuffle=True)
-        dataset["validation"] = self.hf_dataset["original_validation"].to_tf_dataset(
-            columns=["image", "person"]
-        )
-        dataset["test"] = self.hf_dataset["original_test"].to_tf_dataset(
-            columns=["image", "person"]
-        )
+        dataset["train_quality"] = self.ds["train_quality"]
+        dataset["validation"] = self.ds["validation"]
+        dataset["test"] = self.ds["test"]
 
         dataset["train_quality"] = self._preprocessing(
             dataset["train_quality"],

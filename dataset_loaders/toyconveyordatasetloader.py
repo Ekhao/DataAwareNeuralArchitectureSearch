@@ -22,10 +22,8 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
     # There are 1800 normal files and 400 anomalous files (in channel 1)
     def __init__(
         self,
-        file_path: str,
-        num_files: list[int],
-        dataset_options: dict[str, Any],
         num_cores_to_use: int,
+        dataset_options: dict[str, Any],
     ) -> None:
         self.num_cores_to_use = num_cores_to_use
 
@@ -51,13 +49,13 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
 
         # Find all files in the requested channel directory
         normal_files = tf.io.gfile.glob(
-            f"{file_path}/{dataset_options.get('case')}/NormalSound_IND/*ch{dataset_options.get('channel')}*.wav"
+            f"{dataset_options.get('file_path')}/{dataset_options.get('case')}/NormalSound_IND/*ch{dataset_options.get('channel')}*.wav"
         )
         anomalous_files = tf.io.gfile.glob(
-            f"{file_path}/{dataset_options.get('case')}/AnomalousSound_IND/*ch{dataset_options.get('channel')}*.wav"
+            f"{dataset_options.get('file_path')}/{dataset_options.get('case')}/AnomalousSound_IND/*ch{dataset_options.get('channel')}*.wav"
         )
         noise_files = tf.io.gfile.glob(
-            f"{file_path}/EnvironmentalNoise_CNT/*{dataset_options.get('case')}*ch{dataset_options.get('channel')}*.wav"
+            f"{dataset_options.get('file_path')}/EnvironmentalNoise_CNT/*{dataset_options.get('case')}*ch{dataset_options.get('channel')}*.wav"
         )
 
         if len(normal_files) == 0:
@@ -74,10 +72,12 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
             )
 
         # Cut the amount of processed files according to the program parameters
-        normal_files = normal_files[: num_files[0]]
-        anomalous_files = anomalous_files[: num_files[1]]
+        normal_files = normal_files[: dataset_options.get("num_files")[0]]
+        anomalous_files = anomalous_files[: dataset_options.get("num_files")[1]]
         # We should have as many noise files as the sum of normal and anomalous files
-        noise_files = noise_files[: num_files[0] + num_files[1]]
+        noise_files = noise_files[
+            : dataset_options.get("num_files")[0] + dataset_options.get("num_files")[1]
+        ]
 
         # Get the sample rate of the audio files. The sample rate is assumed to be the same for every file.
         self.base_sr = librosa.get_samplerate(normal_files[0])
@@ -117,8 +117,8 @@ class ToyConveyorDatasetLoader(datasetloader.DatasetLoader):
         base_noise_audio = base_noise_audio * math.ceil(num_duplicates)
 
         # Mix noise into the other audio files.
-        normal_noise_audio = base_noise_audio[: num_files[0]]
-        anomalous_noise_audio = base_noise_audio[num_files[1]]
+        normal_noise_audio = base_noise_audio[: dataset_options.get("num_files")[0]]
+        anomalous_noise_audio = base_noise_audio[dataset_options.get("num_files")[1]]
 
         normal_noise_zip = zip(base_normal_audio, normal_noise_audio)
         anomalous_noise_zip = zip(base_anomalous_audio, anomalous_noise_audio)

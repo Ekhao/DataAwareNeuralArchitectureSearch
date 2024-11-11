@@ -11,12 +11,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
     def setUp(self) -> None:
         config_file = open("config.json", "r")
         config = json.load(config_file)
-        config = config["datanas_config"]
-        dataset_config = config["dataset_config"]
         self.dataset_loader = (
             dataset_loaders.toyconveyordatasetloader.ToyConveyorDatasetLoader(
-                dataset_config["file_path"],
-                num_files=[45, 10],
                 dataset_options={
                     "channel": 1,
                     "case": "case1",
@@ -27,6 +23,8 @@ class ToyConveyorDatasetLoaderTestCase(unittest.TestCase):
                     "num_mel_filters": 80,
                     "num_mfccs": 13,
                     "audio_seconds_to_load": 10,
+                    "file_path": "/dtu-compute/emjn/ToyConveyor",
+                    "num_files": [45, 10],
                 },
                 num_cores_to_use=-1,
             )
