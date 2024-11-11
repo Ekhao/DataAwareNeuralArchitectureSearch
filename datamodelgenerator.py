@@ -4,6 +4,7 @@
 import csv
 import datetime
 import pathlib
+import time
 
 # Third Party Imports
 import numpy as np
@@ -23,7 +24,6 @@ class DataModelGenerator:
         loss_function: tf.keras.losses.Loss,
         search_strategy: SearchStrategy,
         dataset_loader: datasetloader.DatasetLoader,
-        test_size: float,
         optimizer: tf.keras.optimizers.Optimizer,
         width_dense_layer: int,
         num_epochs: int,
@@ -42,7 +42,7 @@ class DataModelGenerator:
         self.optimizer = optimizer
         self.width_dense_layer = width_dense_layer
         self.dataset_loader = dataset_loader
-        self.test_size = test_size
+        self.test_size = data_options.get("test_size", None)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.data_options = data_options
@@ -53,7 +53,7 @@ class DataModelGenerator:
         self.model_dtype_multiplier = model_dtype_multiplier
         self.supernet_flag = supernet_flag
 
-    def run_data_nas(self, num_of_models: int) -> list[DataModel]:
+    def run_data_nas(self) -> list[DataModel]:
         pareto_optimal_models = []
         previous_data_configuration = None
         previous_data = None
@@ -79,7 +79,19 @@ class DataModelGenerator:
         if self.supernet_flag:
             supernets = {}
 
-        for model_number in range(num_of_models):
+        # To run the search for 23 hours
+        duration = 23 * 60 * 60
+
+        start_time = time.time()
+
+        model_number = -1
+
+        while True:
+            model_number += 1
+            elapsed_time = time.time() - start_time
+            if elapsed_time > duration:
+                print("23 hours have passed. Stopping script.")
+                break
             # Print that we are now running a new sample
             print("-" * 100)
             print(f"Starting model number {model_number}")

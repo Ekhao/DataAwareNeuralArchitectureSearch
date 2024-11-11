@@ -22,12 +22,6 @@ def main():
 
     # General Parameters
     argparser.add_argument(
-        "-n",
-        "--num_models",
-        help="The number of models to evaluate before returning the pareto front.",
-        type=int,
-    )
-    argparser.add_argument(
         "-s",
         "--seed",
         help="A seed to be given to the random number generators of the program.",
@@ -75,32 +69,7 @@ def main():
     argparser.add_argument(
         "-dn",
         "--dataset_name",
-        help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined.",
-    )
-    argparser.add_argument(
-        "-f",
-        "--file_path",
-        help="The path to the directory containing the selected dataset.",
-    )
-    argparser.add_argument(
-        "-nf",
-        "--num_files",
-        nargs="*",
-        help="The number files to use for training. For some datasets this may require multiple values for different type of files.",
-        type=int,
-    )
-    argparser.add_argument(
-        "-ts",
-        "--test_size",
-        help="The percentage of the data to be used for the test set during training. Given on a scale from 0 to 1.",
-        type=float,
-    )
-    argparser.add_argument(
-        "-do",
-        "--dataset_options",
-        nargs="*",
-        help="Additional options for the dataset loader. Format should be option:value.",
-        type=str,
+        help="The name of the dataset to use for training. An appropriate loader for that dataset need to be defined. If the dataset needs additional options then specify these in the config file.",
     )
 
     # Search Strategy Parameters
@@ -192,8 +161,6 @@ def main():
     evolutionary_config = config["evolutionary_config"]
 
     # Set options according to command line arguments and config file
-    if not args.num_models:
-        args.num_models = general_config["num_models"]
     if not args.seed:
         args.seed = general_config["seed"]
     if not args.supernet:
@@ -210,14 +177,7 @@ def main():
         args.width_dense_layer = model_config["width_dense_layer"]
     if not args.dataset_name:
         args.dataset_name = dataset_config["dataset_name"]
-    if not args.file_path:
-        args.file_path = dataset_config["file_path"]
-    if not args.num_files:
-        args.num_files = dataset_config["num_files"]
-    if not args.test_size:
-        args.test_size = dataset_config["test_size"]
-    if not args.dataset_options:
-        args.dataset_options = dataset_config["dataset_options"]
+    args.dataset_options = dataset_config["dataset_options"]
     if not args.search_strategy:
         args.search_strategy = search_strategy_config["search_strategy"]
     if not args.initialization:
@@ -247,15 +207,6 @@ def main():
     args.data_search_space = search_space_config["data_search_space"]
     args.model_search_space = search_space_config["model_search_space"]
 
-    # If the the dataset options have been passed as command line arguments, parse them into a dictionary
-    # TODO: This may not work anymore 15/10/2024
-    if isinstance(args.dataset_options, str):
-        temp_dataset_options = {}
-        for option in args.dataset_options:
-            key, value = option.split(":")
-            temp_dataset_options[key] = value
-        args.dataset_options = temp_dataset_options
-
     print("Initializing search space...")
     search_space = searchspace.SearchSpace(
         args.data_search_space, args.model_search_space
@@ -265,10 +216,8 @@ def main():
     if args.dataset_name == "ToyConveyor":
         dataset_loader = (
             dataset_loaders.toyconveyordatasetloader.ToyConveyorDatasetLoader(
-                args.file_path,
-                args.num_files,
-                args.dataset_options,
                 args.num_cores_to_use,
+                args.dataset_options,
             )
         )
     elif args.dataset_name == "wake_vision":
@@ -314,7 +263,6 @@ def main():
         loss_function=args.loss,
         search_strategy=search_strategy,
         dataset_loader=dataset_loader,
-        test_size=args.test_size,
         optimizer=args.optimizer,
         width_dense_layer=args.width_dense_layer,
         num_epochs=args.num_epochs,
@@ -326,7 +274,7 @@ def main():
         supernet_flag=args.supernet,
         **args.dataset_options,
     )
-    pareto_front = data_model_generator.run_data_nas(args.num_models)
+    pareto_front = data_model_generator.run_data_nas()
 
     # Print out results
     print("Models on pareto front: ")

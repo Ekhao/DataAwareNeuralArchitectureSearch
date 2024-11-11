@@ -1,7 +1,6 @@
 {
     "datanas_config": {
         "general_config": {
-            "num_models": 12,
             "seed": null,
             "supernet": true
         },
@@ -69,14 +68,8 @@
             "num_output_classes": 2,
             "width_dense_layer": 20
         },
-        "dataset_config": {
+        "dataset_config_ToyADMOS": {
             "dataset_name": "ToyConveyor",
-            "file_path": "/dtu-compute/emjn/ToyConveyor",
-            "num_files": [
-                900,
-                200
-            ],
-            "test_size": 0.2,
             "dataset_options": {
                 "channel": 1,
                 "case": "case1",
@@ -86,11 +79,21 @@
                 "hop_length": 512,
                 "num_mel_filters": 80,
                 "num_mfccs": 13,
-                "audio_seconds_to_load": 10
+                "audio_seconds_to_load": 10,
+                "file_path": "/dtu-compute/emjn/ToyConveyor",
+                "num_files": [
+                    900,
+                    200
+                ],
+                "test_size": 0.2
             }
         },
+        "dataset_config": {
+            "dataset_name": "wake_vision",
+            "dataset_options": {}
+        },
         "search_strategy_config": {
-            "search_strategy": "evolution",
+            "search_strategy": "supernet_evo",
             "initialization": "random",
             "max_num_layers": 10
         },
