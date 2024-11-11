@@ -3,5 +3,5 @@ joblib
 librosa
 scikit-learn
 tensorflow
+tensorflow-datasets
 resampy
-datasets[vision]
