@@ -60,8 +60,10 @@ class DataModelGenerator:
 
         save_directory = pathlib.Path("./datamodel_logs/")
         save_directory.mkdir(exist_ok=True)
-        csv_log_name = f"datamodel_logs/{datetime.datetime.now().isoformat()}.csv"
-        with open(csv_log_name, "w", newline="") as csvfile:
+        evolution_csv_log_name = (
+            f"datamodel_logs/{datetime.datetime.now().isoformat()}_evolution.csv"
+        )
+        with open(evolution_csv_log_name, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(
                 [
@@ -71,7 +73,8 @@ class DataModelGenerator:
                     "Accuracy",
                     "Precision",
                     "Recall",
-                    "Model Size",
+                    "Ram Consumption",
+                    "Flash Consumption",
                 ]
             )
 
@@ -187,6 +190,7 @@ class DataModelGenerator:
                 model=model,
                 data_dtype_multiplier=self.data_dtype_multiplier,
                 model_dtype_multiplier=self.model_dtype_multiplier,
+                model_number=model_number,
             )
 
             print("Evaluating performance of data and model")
@@ -207,7 +211,7 @@ class DataModelGenerator:
             data_model.free_data_model()
 
             print("Saving DataModel and metrics in logs...")
-            self._save_to_csv(csv_log_name, model_number, data_model)
+            self._save_to_csv(evolution_csv_log_name, model_number, data_model)
 
             print("Saving DataModel for pareto front calculation")
             # Save the models that are pareto optimal

@@ -25,6 +25,7 @@ class DataModel:
         model: tf.keras.Model,
         data_dtype_multiplier: int,
         model_dtype_multiplier: int,
+        model_number=None,
         seed=None,
     ) -> None:
         self.configuration = configuration
@@ -33,6 +34,7 @@ class DataModel:
         self.seed = seed
         self.data_dtype_multiplier = data_dtype_multiplier
         self.model_dtype_multiplier = model_dtype_multiplier
+        self.model_number = model_number
 
     @staticmethod
     def create_data(
