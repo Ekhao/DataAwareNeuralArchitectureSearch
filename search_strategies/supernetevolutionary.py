@@ -83,8 +83,11 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
     def _evaluate_fitness(
         data_model: DataModel, max_ram_consumption: int, max_flash_consumption: int
     ) -> float:
-        ram_score = -4 if data_model.ram_consumption > max_ram_consumption else 1
-        flash_score = -4 if data_model.flash_consumption > max_flash_consumption else 1
+        ram_violation = max(data_model.ram_consumption - max_ram_consumption, 0)
+        flash_violation = max(data_model.flash_consumption - max_flash_consumption, 0)
+
+        ram_score = 1 - (ram_violation / max_ram_consumption)
+        flash_score = 1 - (flash_violation / max_flash_consumption)
         return (
             data_model.accuracy
             + data_model.precision
