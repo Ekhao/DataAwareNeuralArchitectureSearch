@@ -3,6 +3,7 @@
 # Standard Library Imports
 from __future__ import annotations
 from typing import Any, Optional
+import gc
 
 # Third Party Imports
 import tensorflow as tf
@@ -291,4 +292,6 @@ class DataModel:
     def free_data_model(self) -> None:
         del self.data
         del self.model
+        tf.keras.backend.clear_session()
+        gc.collect()
         return
