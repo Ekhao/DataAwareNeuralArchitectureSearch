@@ -178,6 +178,8 @@ class DataModel:
         max_tensor_memory = 0
 
         for i, layer in enumerate(model.layers):
+            if layer.name == "input_layer":
+                continue
 
             if isinstance(layer.input, list):
                 input_size = 0
