@@ -129,9 +129,7 @@ class DataModelGenerator:
                 continue
 
             if self.supernet_flag:
-                if (
-                    tuple(configuration.data_configuration.items()) in supernets
-                ):  # This seems to not work and each input is considered the same - check out
+                if tuple(configuration.data_configuration.items()) in supernets:
                     supernet_instance = supernets[
                         tuple(configuration.data_configuration.items())
                     ]
