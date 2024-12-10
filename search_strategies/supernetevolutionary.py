@@ -56,6 +56,8 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                     "stage5depth": random.randint(0, 3),
                     "stage6depth": random.randint(0, 3),
                     "stage7depth": random.randint(0, 1),
+                    "stage1width": random.uniform(0.1, 1),
+                    "stage2width": random.uniform(0.1, 1),
                 },
             )
             for i in range(self.population_size)
@@ -183,7 +185,7 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                         mutation.data_configuration[key_to_mutate] = mutated_value
 
                     # Case for changing a configuration of a model layer
-                    case x if 0.5 <= x < 1:
+                    case x if 0.5 <= x < 0.8:
                         number_of_block_to_mutate = random.randint(3, 7)
 
                         if number_of_block_to_mutate == 4:
@@ -203,6 +205,20 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                         mutation.model_configuration[
                             f"stage{number_of_block_to_mutate}depth"
                         ] = mutated_value
+                    case x if 0.8 <= x < 1:
+                        width_to_mutate = random.randint(1, 2)
+                        possible_values = np.linspace(0.1, 1, 10)
+
+                        mutated_value = self._mutate_value(
+                            configuration_to_mutate.model_configuration[
+                                f"stage{width_to_mutate}width"
+                            ],
+                            possible_values=possible_values,
+                        )
+
+                        mutation.model_configuration[f"stage{width_to_mutate}width"] = (
+                            mutated_value
+                        )
 
             mutations.append(mutation)
 

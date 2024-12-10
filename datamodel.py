@@ -4,6 +4,7 @@
 from __future__ import annotations
 from typing import Any, Optional
 import gc
+import re
 
 # Third Party Imports
 import tensorflow as tf
@@ -181,6 +182,13 @@ class DataModel:
             if layer.name == "input_layer":
                 continue
 
+            if re.search(r"block_1", layer.name):
+                mask_multiplier = model.get_layer("block_1_mask").mask_ratio
+            elif re.search(r"block_2", layer.name):
+                mask_multiplier = model.get_layer("block_2_mask").mask_ratio
+            else:
+                mask_multiplier = 1
+
             if isinstance(layer.input, list):
                 input_size = 0
                 for inputs in layer.input:
@@ -193,7 +201,7 @@ class DataModel:
             output_size = np.prod(output_shape[1:])
             input_memory = input_size * data_dtype_multiplier
             output_memory = output_size * data_dtype_multiplier
-            tensor_memory = input_memory + output_memory
+            tensor_memory = int((input_memory + output_memory) * mask_multiplier)
             max_tensor_memory = max(max_tensor_memory, tensor_memory)
 
         return max_tensor_memory

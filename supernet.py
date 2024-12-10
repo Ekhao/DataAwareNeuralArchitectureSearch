@@ -1,8 +1,24 @@
 import tensorflow as tf
 import dataset_loaders.wakevisiondatasetloader
+import numpy as np
 
 SUPERNET_NUM_EPOCHS_PRETRAIN = 30
 SUPERNET_STEPS_PER_EPOCH = 1000
+
+
+class ChannelMask(tf.keras.layers.Layer):
+    def __init__(self, mask, **kwargs):
+        """
+        Initializes the ChannelMask layer.
+        :param mask: A binary mask indicating which channels to keep (1) or exclude (0).
+        """
+        super(ChannelMask, self).__init__(**kwargs)
+        self.mask = tf.constant(mask, dtype=tf.float32)
+        self.mask_ratio = mask
+
+    def call(self, inputs):
+        # Apply the mask by multiplying it element-wise
+        return inputs * self.mask
 
 
 class SuperNet:
@@ -55,6 +71,8 @@ class SuperNet:
         stage5depth: int,
         stage6depth: int,
         stage7depth: int,
+        stage1width: float,
+        stage2width: float,
     ):
         assert 0 <= stage3depth <= 3
         assert 0 <= stage4depth <= 4
@@ -81,8 +99,29 @@ class SuperNet:
         x = self.supernet.get_layer("expanded_conv_project_BN").output
 
         # Stage 2 - Block 1-2 - keep all
-        x = self.supernet.get_layer("block_1_project_BN").output
-        x = self.supernet.get_layer("block_2_project_BN").output
+
+        # Block 1
+        x = self.supernet.get_layer("block_1_expand").output
+        x = self.generate_mask_layer(x, stage1width, "block_1_mask")(x)
+        x = self.supernet.get_layer(f"block_1_expand_BN")(x)
+        x = self.supernet.get_layer(f"block_1_expand_relu")(x)
+        x = self.supernet.get_layer(f"block_1_pad")(x)
+        x = self.supernet.get_layer(f"block_1_depthwise")(x)
+        x = self.supernet.get_layer(f"block_1_depthwise_BN")(x)
+        x = self.supernet.get_layer(f"block_1_depthwise_relu")(x)
+        x = self.supernet.get_layer(f"block_1_project")(x)
+        x = self.supernet.get_layer(f"block_1_project_BN")(x)
+
+        # Block 2
+        x = self.supernet.get_layer("block_2_expand")(x)
+        x = self.generate_mask_layer(x, stage2width, "block_2_mask")(x)
+        x = self.supernet.get_layer(f"block_2_expand_BN")(x)
+        x = self.supernet.get_layer(f"block_2_expand_relu")(x)
+        x = self.supernet.get_layer(f"block_2_depthwise")(x)
+        x = self.supernet.get_layer(f"block_2_depthwise_BN")(x)
+        x = self.supernet.get_layer(f"block_2_depthwise_relu")(x)
+        x = self.supernet.get_layer(f"block_2_project")(x)
+        x = self.supernet.get_layer(f"block_2_project_BN")(x)
 
         # Stage 3 - Block 3-5 - Vary 0-3
         for i in range(3, 3 + stage3depth):
@@ -151,6 +190,12 @@ class SuperNet:
             block_project
         )
         return block_project_BN
+
+    def generate_mask_layer(self, input, width, name):
+        max_channels = input.shape[3]
+        mask = np.zeros(max_channels)
+        mask[: int(max_channels * width)] = 1
+        return ChannelMask(mask=mask, name=name)
 
 
 if __name__ == "__main__":
