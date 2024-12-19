@@ -314,9 +314,9 @@ class EvolutionarySearchStrategy(searchstrategy.SearchStrategy):
     # Remove the last convolutional layer of the model
     def _remove_layer_mutation(self, configuration: Configuration) -> Configuration:
         mutation = copy.deepcopy(configuration)
-        assert type(mutation[1]) == list
-        if len(mutation[1]) > 1:
-            mutation[1].pop()
+        assert type(mutation.model_configuration) == list
+        if len(mutation.model_configuration) > 1:
+            mutation.model_configuration.pop()
         return mutation
 
     def _create_crossovers(

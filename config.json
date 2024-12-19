@@ -100,8 +100,8 @@
         "evaluation_config": {
             "num_epochs": 10,
             "batch_size": 32,
-            "max_ram_consumption": 2560000,
-            "max_flash_consumption": 10000000,
+            "max_ram_consumption": 524288,
+            "max_flash_consumption": 2097152,
             "data_dtype_multiplier": 1,
             "model_dtype_multiplier": 1
         },
