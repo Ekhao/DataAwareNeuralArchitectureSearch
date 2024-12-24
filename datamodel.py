@@ -4,6 +4,7 @@
 from __future__ import annotations
 from typing import Any, Optional
 import gc
+import re
 
 # Third Party Imports
 import tensorflow as tf
@@ -151,12 +152,16 @@ class DataModel:
     @staticmethod
     def _get_model_size(model, model_dtype_multiplier: int):
         total_bytes = 0
+        mask_multiplier = model.get_layer("block_1_mask").mask_ratio
         for layer in model.layers:
+
             for weight in layer.weights:
                 # Get the weight values
                 weight_values = weight.numpy()
                 # Get the number of bytes for each weight tensor
-                total_bytes += weight_values.size * model_dtype_multiplier
+                total_bytes += int(
+                    weight_values.size * model_dtype_multiplier * mask_multiplier
+                )
         return total_bytes
 
     @staticmethod
@@ -176,6 +181,7 @@ class DataModel:
     @staticmethod
     def _get_max_internal_representation_size(model, data_dtype_multiplier: int):
         max_tensor_memory = 0
+        mask_multiplier = model.get_layer("block_1_mask").mask_ratio
 
         for i, layer in enumerate(model.layers):
             if layer.name == "input_layer":
@@ -191,8 +197,14 @@ class DataModel:
 
             output_shape = layer.output.shape
             output_size = np.prod(output_shape[1:])
+
             input_memory = input_size * data_dtype_multiplier
             output_memory = output_size * data_dtype_multiplier
+            if layer.name != "Conv1":
+                input_memory = int(input_memory * mask_multiplier)
+            if layer.name != "dense":
+                output_memory = int(output_memory * mask_multiplier)
+
             tensor_memory = input_memory + output_memory
             max_tensor_memory = max(max_tensor_memory, tensor_memory)
 
