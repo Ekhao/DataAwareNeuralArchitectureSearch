@@ -3,6 +3,8 @@
 # Standard Library Imports
 import argparse
 import json
+import datetime
+import csv
 
 # Local Imports
 import searchspace
@@ -276,15 +278,37 @@ def main():
     )
     pareto_front = data_model_generator.run_data_nas()
 
-    # Print out results
-    print("Models on pareto front: ")
-    for data_model in pareto_front:
-        print(data_model.configuration.data_configuration)
-        print(data_model.configuration.model_configuration)
-        print(
-            f"Accuracy: {data_model.accuracy}, Precision: {data_model.precision}, Recall: {data_model.recall}, Ram Consumption (in bytes): {data_model.ram_consumption}, Flash Consumption (in bytes): {data_model.flash_consumption}."
+    # Save pareto results
+    pareto_csv_log_name = (
+        f"datamodel_logs/{datetime.datetime.now().isoformat()}_pareto.csv"
+    )
+    with open(pareto_csv_log_name, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(
+            [
+                "Model Number",
+                "Data Configuration",
+                "Model Configuration",
+                "Accuracy",
+                "Precision",
+                "Recall",
+                "Ram Consumption",
+                "Flash Consumption",
+            ]
         )
-        print("-" * 200)
+        for data_model in pareto_front:
+            writer.writerow(
+                [
+                    data_model.model_number,
+                    data_model.configuration.data_configuration,
+                    data_model.configuration.model_configuration,
+                    data_model.accuracy,
+                    data_model.precision,
+                    data_model.recall,
+                    data_model.ram_consumption,
+                    data_model.flash_consumption,
+                ]
+            )
 
 
 if __name__ == "__main__":

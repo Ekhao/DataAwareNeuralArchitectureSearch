@@ -4,6 +4,7 @@
 import random
 import copy
 from typing import Optional, Any
+import re
 
 # Third Party Imports
 import numpy as np
@@ -56,10 +57,47 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                     "stage5depth": random.randint(0, 3),
                     "stage6depth": random.randint(0, 3),
                     "stage7depth": random.randint(0, 1),
+                    "alpha": random.choice([i * 0.1 for i in range(1, 11)]),
                 },
             )
             for i in range(self.population_size)
         ]
+
+        # Move non-zero values from later depths to earlier zero keys to ensure working architectures
+        for configuration in self.unevaluated_configurations:
+            zero_indices = []
+            surplus_indices = []
+            keys = list(configuration.model_configuration.keys())
+
+            re_pattern = r"depth"
+            keys = [key for key in keys if re.search(re_pattern, key)]
+
+            for i, key in enumerate(keys):
+                value = configuration.model_configuration[key]
+                if value > 0:
+                    surplus_indices.append(i)
+                if value == 0:
+                    zero_indices.append(i)
+
+            surplus_indices.reverse()
+
+            for zero_index in zero_indices:
+                if not surplus_indices:
+                    break
+
+                surplus_index = surplus_indices[0]
+
+                if zero_index > surplus_index:
+                    break
+
+                zero_key = keys[zero_index]
+                surplus_key = keys[surplus_index]
+
+                configuration.model_configuration[zero_key] = 1
+                configuration.model_configuration[surplus_key] -= 1
+
+                if configuration.model_configuration[surplus_key] == 0:
+                    surplus_indices.pop(0)
 
     # Fetches an element that has not yet been evaluated from the population
     def generate_configuration(self) -> Configuration:
@@ -83,9 +121,11 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
     def _evaluate_fitness(
         data_model: DataModel, max_ram_consumption: int, max_flash_consumption: int
     ) -> float:
-        # TODO update to take into account different ram and flash requirements
-        ram_score = -4 if data_model.ram_consumption > max_ram_consumption else 1
-        flash_score = -4 if data_model.flash_consumption > max_flash_consumption else 1
+        ram_violation = max(data_model.ram_consumption - max_ram_consumption, 0)
+        flash_violation = max(data_model.flash_consumption - max_flash_consumption, 0)
+
+        ram_score = 1 - (ram_violation / max_ram_consumption)
+        flash_score = 1 - (flash_violation / max_flash_consumption)
         return (
             data_model.accuracy
             + data_model.precision
@@ -166,7 +206,7 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                 random_mutation_number = random.random()
                 match random_mutation_number:
                     # Case for changing the data granularity
-                    case x if 0 <= x < 0.5:
+                    case x if 0 <= x < 0.4:
                         key_to_mutate = random.choice(
                             list(configuration_to_mutate.data_configuration.keys())
                         )
@@ -181,7 +221,7 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                         mutation.data_configuration[key_to_mutate] = mutated_value
 
                     # Case for changing a configuration of a model layer
-                    case x if 0.5 <= x < 1:
+                    case x if 0.4 <= x < 0.8:
                         number_of_block_to_mutate = random.randint(3, 7)
 
                         if number_of_block_to_mutate == 4:
@@ -201,6 +241,51 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                         mutation.model_configuration[
                             f"stage{number_of_block_to_mutate}depth"
                         ] = mutated_value
+
+                        # Move non-zero values from later depths to earlier zero keys to ensure working architectures
+                        zero_indices = []
+                        surplus_indices = []
+                        keys = list(mutation.model_configuration.keys())
+
+                        re_pattern = r"depth"
+                        keys = [key for key in keys if re.search(re_pattern, key)]
+
+                        for i, key in enumerate(keys):
+                            value = mutation.model_configuration[key]
+                            if value > 0:
+                                surplus_indices.append(i)
+                            if value == 0:
+                                zero_indices.append(i)
+
+                        surplus_indices.reverse()
+
+                        for zero_index in zero_indices:
+                            if not surplus_indices:
+                                break
+
+                            surplus_index = surplus_indices[0]
+
+                            if zero_index > surplus_index:
+                                break
+
+                            zero_key = keys[zero_index]
+                            surplus_key = keys[surplus_index]
+
+                            mutation.model_configuration[zero_key] = 1
+                            mutation.model_configuration[surplus_key] -= 1
+
+                            if mutation.model_configuration[surplus_key] == 0:
+                                surplus_indices.pop(0)
+
+                    case x if 0.8 <= x < 1:
+                        possible_values = [i * 0.1 for i in range(1, 11)]
+
+                        mutated_value = self._mutate_value(
+                            configuration_to_mutate.model_configuration["alpha"],
+                            possible_values=possible_values,
+                        )
+
+                        mutation.model_configuration["alpha"] = mutated_value
 
             mutations.append(mutation)
 
@@ -274,5 +359,11 @@ class SuperNetEvolutionary(searchstrategy.SearchStrategy):
                     configuration2.model_configuration[f"stage{i}depth"],
                 ]
             )
+        new_model["alpha"] = random.choice(
+            [
+                configuration1.model_configuration["alpha"],
+                configuration2.model_configuration["alpha"],
+            ]
+        )
 
         return Configuration(data_configuration=new_data, model_configuration=new_model)
